@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactElement } from "react";
 import { Notice } from "obsidian";
 import { Icon } from "./Icon";
 import { TaskItem } from "./TaskItem";
@@ -15,7 +15,7 @@ export interface TaskListProps {
 	loading: boolean;
 }
 
-export function TaskList({ tasks, busyTaskIds, showListNames, emptyMessage, loading }: TaskListProps): JSX.Element {
+export function TaskList({ tasks, busyTaskIds, showListNames, emptyMessage, loading }: TaskListProps): ReactElement {
 	const { service } = useTodoContext();
 	const [expandedId, setExpandedId] = useState<string | null>(null);
 	const [showCompleted, setShowCompleted] = useState(false);
@@ -44,7 +44,7 @@ export function TaskList({ tasks, busyTaskIds, showListNames, emptyMessage, load
 		}
 	}
 
-	function renderTask(task: TaskWithList): JSX.Element {
+	function renderTask(task: TaskWithList): ReactElement {
 		return (
 			<TaskItem
 				key={task.id}

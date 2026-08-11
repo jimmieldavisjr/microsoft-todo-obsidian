@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactElement } from "react";
 import { Icon } from "./Icon";
 import { TaskDetails } from "./TaskDetails";
 import { fromGraphDate, formatDueDate, isOverdue, isToday } from "../util/date";
@@ -21,7 +21,7 @@ export interface TaskItemProps {
  * One task row, following Microsoft To Do's anatomy: completion circle on the
  * left, title and metadata in the middle, importance star pinned to the right.
  */
-export function TaskItem(props: TaskItemProps): JSX.Element {
+export function TaskItem(props: TaskItemProps): ReactElement {
 	const { task, busy, expanded } = props;
 	const [editing, setEditing] = useState(false);
 	const [draft, setDraft] = useState(task.title);

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from "react";
 import { Notice } from "obsidian";
 import { Icon } from "./Icon";
 import { AddTask } from "./AddTask";
@@ -24,7 +24,7 @@ const TODO_WEB_URL = "https://to-do.office.com/tasks/";
  * each render, so React would remount them and throw away the open task, the
  * add-task draft, and the collapsed state of the list sidebar.
  */
-export function TodoPanel(): JSX.Element {
+export function TodoPanel(): ReactElement {
 	const state = useTodoState();
 
 	if (!state.configured) return <SetupCard />;
@@ -47,7 +47,7 @@ export function TodoPanel(): JSX.Element {
  * They sit on the card layer with a single stroke closing the band off, which
  * is what separates "what I'm doing" from "what's in the list".
  */
-function TopBar(): JSX.Element {
+function TopBar(): ReactElement {
 	return (
 		<div className="mstd-topbar">
 			<PanelHeader />
@@ -68,7 +68,7 @@ function TopBar(): JSX.Element {
  * There is deliberately no "Microsoft To Do" eyebrow - Obsidian's own view tab
  * already says that, and it was pushing the real heading down a row.
  */
-function PanelHeader(): JSX.Element {
+function PanelHeader(): ReactElement {
 	const { plugin, service } = useTodoContext();
 	const state = useTodoState();
 
@@ -134,7 +134,7 @@ function subtitleFor(selection: ListSelection): string | null {
 	return null;
 }
 
-function ErrorBanner(): JSX.Element | null {
+function ErrorBanner(): ReactElement | null {
 	const { plugin, service } = useTodoContext();
 	const { error } = useTodoState();
 	if (!error) return null;
@@ -167,7 +167,7 @@ function ErrorBanner(): JSX.Element | null {
 	);
 }
 
-function PanelFooter(): JSX.Element {
+function PanelFooter(): ReactElement {
 	const { lastSyncAt } = useTodoState();
 	useMinuteTick();
 
@@ -185,7 +185,7 @@ function PanelFooter(): JSX.Element {
 /* Tasks                                                                      */
 /* -------------------------------------------------------------------------- */
 
-function Composer(): JSX.Element {
+function Composer(): ReactElement {
 	const { service } = useTodoContext();
 	const state = useTodoState();
 
@@ -229,7 +229,7 @@ function Composer(): JSX.Element {
 	);
 }
 
-function TaskScroll(): JSX.Element {
+function TaskScroll(): ReactElement {
 	const state = useTodoState();
 	const selection = state.selection;
 	const isSmart = selection.kind === "smart";
@@ -292,7 +292,7 @@ function emptyMessageFor(selection: ListSelection): string {
 /* List sidebar                                                               */
 /* -------------------------------------------------------------------------- */
 
-function ListSidebar(): JSX.Element {
+function ListSidebar(): ReactElement {
 	const { service } = useTodoContext();
 	const state = useTodoState();
 	const [collapsed, setCollapsed] = useState(false);
@@ -351,7 +351,7 @@ function ListRow(props: {
 	count: number | undefined;
 	active: boolean;
 	onSelect: () => void;
-}): JSX.Element {
+}): ReactElement {
 	return (
 		<li>
 			<button
@@ -372,7 +372,7 @@ function ListRow(props: {
 /* Empty states                                                               */
 /* -------------------------------------------------------------------------- */
 
-function SetupCard(): JSX.Element {
+function SetupCard(): ReactElement {
 	const { plugin } = useTodoContext();
 
 	return (
@@ -390,7 +390,7 @@ function SetupCard(): JSX.Element {
 	);
 }
 
-function SignInCard(): JSX.Element {
+function SignInCard(): ReactElement {
 	const { plugin } = useTodoContext();
 	const [signingIn, setSigningIn] = useState(false);
 
@@ -406,14 +406,12 @@ function SignInCard(): JSX.Element {
 				type="button"
 				className="mod-cta"
 				disabled={signingIn}
-				onClick={async () => {
+				// Kept sync: React expects a void-returning handler, so the async
+				// work is started rather than returned.
+				onClick={() => {
 					// `signIn` reports its own failures; we only track the button state.
 					setSigningIn(true);
-					try {
-						await plugin.signIn();
-					} finally {
-						setSigningIn(false);
-					}
+					void plugin.signIn().finally(() => setSigningIn(false));
 				}}
 			>
 				{signingIn ? "Waiting for sign-in…" : "Connect Microsoft account"}

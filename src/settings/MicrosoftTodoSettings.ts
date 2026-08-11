@@ -181,7 +181,7 @@ export class MicrosoftTodoSettingTab extends PluginSettingTab {
 				if (auth.isSignedIn) {
 					button
 						.setButtonText("Disconnect")
-						.setWarning()
+						.setDestructive()
 						.onClick(async () => {
 							await this.plugin.signOut();
 							this.display();

@@ -1,11 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactElement } from "react";
 import { setIcon } from "obsidian";
 
 /**
  * Renders one of Obsidian's built-in (Lucide) icons, so the panel inherits the
  * host theme's icon set rather than shipping its own.
  */
-export function Icon({ name, className }: { name: string; className?: string }): JSX.Element {
+export function Icon({ name, className }: { name: string; className?: string }): ReactElement {
 	const ref = useRef<HTMLSpanElement>(null);
 
 	useEffect(() => {

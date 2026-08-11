@@ -9,6 +9,10 @@ on:
 
 permissions:
   contents: write
+  # Required to sign build provenance, so users can cryptographically verify the
+  # released files were built from this repository by this workflow.
+  id-token: write
+  attestations: write
 
 jobs:
   release:
@@ -42,6 +46,14 @@ jobs:
       # Runs tsc --noEmit before bundling, so a type error fails the release.
       - name: Build
         run: npm run build
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            main.js
+            manifest.json
+            styles.css
 
       # The three files are attached individually, not zipped: Obsidian
       # downloads them by name from the release assets.

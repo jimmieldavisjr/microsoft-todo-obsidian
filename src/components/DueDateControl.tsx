@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactElement } from "react";
 import { Icon } from "./Icon";
 import {
 	addDays,
@@ -29,7 +29,7 @@ export function DueDateControl({
 	onChange,
 	disabled,
 	placeholder = "Due date",
-}: DueDateControlProps): JSX.Element {
+}: DueDateControlProps): ReactElement {
 	const [open, setOpen] = useState(false);
 	const [picking, setPicking] = useState(false);
 	const [above, setAbove] = useState(false);
@@ -160,7 +160,7 @@ function MenuItem(props: {
 	label: string;
 	hint?: string;
 	onSelect: () => void;
-}): JSX.Element {
+}): ReactElement {
 	return (
 		<button type="button" className="mstd-menu-item" role="menuitem" onClick={props.onSelect}>
 			<Icon name={props.icon} />

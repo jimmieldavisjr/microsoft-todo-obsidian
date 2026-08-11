@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 import { Icon } from "./Icon";
 import { DueDateControl } from "./DueDateControl";
 import { fromGraphDate } from "../util/date";
@@ -21,7 +21,7 @@ export interface TaskDetailsProps {
  * narrow sidebar, where a modal would cover the note the user is working in.
  * Importance is deliberately absent - the star on the row itself owns that.
  */
-export function TaskDetails({ task, showListName, busy, onUpdate, onDelete, onClose }: TaskDetailsProps): JSX.Element {
+export function TaskDetails({ task, showListName, busy, onUpdate, onDelete, onClose }: TaskDetailsProps): ReactElement {
 	const [notes, setNotes] = useState(task.body?.content ?? "");
 	const [confirmingDelete, setConfirmingDelete] = useState(false);
 

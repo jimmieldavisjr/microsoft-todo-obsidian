@@ -109,14 +109,17 @@ export default class MicrosoftTodoPlugin extends Plugin {
 	/* ---------------------------------------------------------------------- */
 
 	async loadSettings(): Promise<void> {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		// loadData is typed `any`; narrow it before merging so the spread can't
+		// quietly widen the settings type.
+		const saved = ((await this.loadData()) ?? {}) as Partial<MicrosoftTodoSettings>;
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, saved);
 
 		// A saved value always beats the default, so two cases need rescuing:
 		// installs from before the plugin shipped a registration (empty), and
 		// installs pinned to a registration we used to ship. Neither was a choice
 		// the user made, and leaving either alone strands them on a dead app.
-		const saved = this.settings.clientId.trim();
-		if (!saved || SUPERSEDED_CLIENT_IDS.includes(saved)) {
+		const savedClientId = this.settings.clientId.trim();
+		if (!savedClientId || SUPERSEDED_CLIENT_IDS.includes(savedClientId)) {
 			this.settings.clientId = BUNDLED_CLIENT_ID;
 		}
 	}
@@ -193,7 +196,9 @@ export default class MicrosoftTodoPlugin extends Plugin {
 			await leaf.setViewState({ type: VIEW_TYPE_MICROSOFT_TODO, active: options.focus !== false });
 		}
 
-		if (options.focus !== false) workspace.revealLeaf(leaf);
+		// revealLeaf returns a promise as of Obsidian 1.7.2, which is why
+		// minAppVersion sits there rather than lower.
+		if (options.focus !== false) await workspace.revealLeaf(leaf);
 		if (options.selection) await this.taskService.select(options.selection);
 	}
 

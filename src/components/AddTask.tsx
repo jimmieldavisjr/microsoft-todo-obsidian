@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactElement } from "react";
 import { Icon } from "./Icon";
 import { DueDateControl } from "./DueDateControl";
 import type { CreateTaskInput, Importance, TodoTaskList } from "../types/microsoft-todo";
@@ -24,7 +24,7 @@ export interface AddTaskProps {
  * toolbar of labelled options that appears once the field is in use, with the
  * commit button anchored to its right.
  */
-export function AddTask(props: AddTaskProps): JSX.Element {
+export function AddTask(props: AddTaskProps): ReactElement {
 	const { defaultDueDate, defaultImportance, targetListId } = props;
 
 	const [title, setTitle] = useState("");
@@ -81,7 +81,7 @@ export function AddTask(props: AddTaskProps): JSX.Element {
 			// out from under the click.
 			onFocus={() => setActive(true)}
 			onBlur={(event) => {
-				if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setActive(false);
+				if (!event.currentTarget.contains(event.relatedTarget)) setActive(false);
 			}}
 		>
 			<div className="mstd-composer-main">
