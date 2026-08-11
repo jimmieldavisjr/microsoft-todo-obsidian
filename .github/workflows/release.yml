@@ -1,0 +1,56 @@
+name: Release
+
+# Obsidian's plugin directory expects the release tag to equal the version in
+# manifest.json exactly, with no `v` prefix - so that's what this triggers on.
+on:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: npm
+
+      # Catches the classic mistake of tagging before bumping the manifest,
+      # which produces a release Obsidian will refuse to install.
+      - name: Verify tag matches manifest version
+        run: |
+          manifest_version="$(jq -r .version manifest.json)"
+          if [ "$GITHUB_REF_NAME" != "$manifest_version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match manifest.json version $manifest_version"
+            exit 1
+          fi
+          if ! jq -e --arg v "$manifest_version" 'has($v)' versions.json > /dev/null; then
+            echo "::error::versions.json has no entry for $manifest_version"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Runs tsc --noEmit before bundling, so a type error fails the release.
+      - name: Build
+        run: npm run build
+
+      # The three files are attached individually, not zipped: Obsidian
+      # downloads them by name from the release assets.
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --draft \
+            --generate-notes \
+            main.js manifest.json styles.css

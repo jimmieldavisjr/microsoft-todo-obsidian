@@ -6,5 +6,6 @@
   "description": "Browse your Microsoft To Do lists, create, edit, complete and reopen tasks, and send notes or selected text to To Do - without leaving your vault.",
   "author": "Jimmie Davis",
   "authorUrl": "https://github.com/jimmieldavisjr",
+  "fundingUrl": "https://github.com/sponsors/jimmieldavisjr",
   "isDesktopOnly": false
 }

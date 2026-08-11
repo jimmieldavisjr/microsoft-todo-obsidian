@@ -264,6 +264,24 @@ npm run typecheck    # tsc --noEmit
 npm run build        # typecheck + production bundle
 ```
 
+### Releasing
+
+Tags drive releases. `.github/workflows/release.yml` builds the plugin and
+attaches `main.js`, `manifest.json` and `styles.css` to a **draft** release for
+you to review and publish.
+
+```bash
+# 1. bump "version" in manifest.json and package.json
+# 2. add the new version to versions.json, mapped to its minAppVersion
+# 3. commit, then tag with the same version - no `v` prefix
+git tag 1.0.1
+git push origin 1.0.1
+```
+
+The workflow fails fast if the tag doesn't match `manifest.json`, or if
+`versions.json` has no entry for it — both produce a release Obsidian refuses to
+install.
+
 ---
 
 ## License
