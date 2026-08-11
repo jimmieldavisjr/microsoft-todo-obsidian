@@ -57,7 +57,8 @@ export const BUNDLED_CLIENT_ID = "305576c8-1eba-486b-bb1f-351b29a78dde";
  * to move forward. Anything else is somebody's own registration; leave it alone.
  */
 export const SUPERSEDED_CLIENT_IDS: readonly string[] = [
-	"305576c8-1eba-486b-bb1f-351b29a78dde",
+	// Empty while BUNDLED_CLIENT_ID is the first registration ever shipped.
+	// When it changes, move the previous value here so existing installs follow.
 ];
 
 export const DEFAULT_SETTINGS: MicrosoftTodoSettings = {
