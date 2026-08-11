@@ -402,6 +402,28 @@ export class MicrosoftAuth {
 			);
 		}
 
+		// AADSTS50059 / AADSTS700016: the /common endpoint could not work out which
+		// directory to sign the user into. In practice that means the app
+		// registration is single-tenant, so it only accepts accounts from the one
+		// directory it was created in - Microsoft reports it as a missing tenant
+		// rather than as a misconfigured app.
+		if (description?.includes("AADSTS50059") || description?.includes("AADSTS700016")) {
+			return new AppError(
+				"not-configured",
+				"This app registration only accepts accounts from a single Microsoft directory. Either set 'Directory (tenant)' in the plugin settings to your organisation's tenant ID, or use an app registration whose supported account types include any directory and personal Microsoft accounts.",
+				{ status: response.status, code }
+			);
+		}
+
+		// AADSTS50020: the account exists, but not in the directory this app allows.
+		if (description?.includes("AADSTS50020")) {
+			return new AppError(
+				"not-configured",
+				"That Microsoft account is not allowed to use this app registration. It accepts accounts from a different directory - sign in with an account from that organisation, or use your own app registration in the plugin settings.",
+				{ status: response.status, code }
+			);
+		}
+
 		if (response.status === 429 || response.status >= 500) {
 			return new AppError(
 				"service-unavailable",
