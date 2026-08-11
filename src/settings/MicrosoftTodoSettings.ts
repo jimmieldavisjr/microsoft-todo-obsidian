@@ -181,7 +181,10 @@ export class MicrosoftTodoSettingTab extends PluginSettingTab {
 				if (auth.isSignedIn) {
 					button
 						.setButtonText("Disconnect")
-						.setDestructive()
+						// setDestructive would be the modern call, but it is @since
+						// 1.13.0 and this plugin supports 1.7.2 upward. Deprecated
+						// beats unavailable.
+						.setWarning()
 						.onClick(async () => {
 							await this.plugin.signOut();
 							this.display();
