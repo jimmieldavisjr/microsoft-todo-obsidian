@@ -14,6 +14,7 @@ import { GraphClient } from "./graph/GraphClient";
 import { TodoApi } from "./graph/TodoApi";
 import { TaskService } from "./services/TaskService";
 import {
+	BUNDLED_CLIENT_ID,
 	DEFAULT_SETTINGS,
 	MicrosoftTodoSettingTab,
 	type MicrosoftTodoSettings,
@@ -108,6 +109,13 @@ export default class MicrosoftTodoPlugin extends Plugin {
 
 	async loadSettings(): Promise<void> {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+
+		// Anyone who installed before the plugin shipped its own app registration
+		// has an empty clientId saved, and a saved value wins over the default -
+		// so without this they'd stay stuck on the setup screen after updating.
+		if (!this.settings.clientId.trim()) {
+			this.settings.clientId = BUNDLED_CLIENT_ID;
+		}
 	}
 
 	async saveSettings(): Promise<void> {

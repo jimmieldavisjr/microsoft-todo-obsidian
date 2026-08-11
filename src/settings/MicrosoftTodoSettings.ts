@@ -32,8 +32,21 @@ export interface MicrosoftTodoSettings {
 	currentNoteListId: string;
 }
 
+/**
+ * The app registration this plugin ships with, so signing in is just "click
+ * Connect and type the code" - no Azure portal trip.
+ *
+ * A client ID is not a secret: OAuth public clients are designed to embed one,
+ * and it grants nothing on its own. Every user still signs in as themselves and
+ * consents individually, and the token never leaves their machine.
+ *
+ * Users in tenants that block unapproved third-party apps can point the plugin
+ * at their own registration in settings.
+ */
+export const BUNDLED_CLIENT_ID = "305576c8-1eba-486b-bb1f-351b29a78dde";
+
 export const DEFAULT_SETTINGS: MicrosoftTodoSettings = {
-	clientId: "",
+	clientId: BUNDLED_CLIENT_ID,
 	tenantId: "common",
 	auth: null,
 
@@ -79,6 +92,8 @@ export class MicrosoftTodoSettingTab extends PluginSettingTab {
 		if (!auth.isConfigured) {
 			status.addClass("mstd-settings-status--warning");
 			status.setText("Not configured - add an Azure application (client) ID below.");
+		} else if (!auth.isSignedIn && this.plugin.settings.clientId === BUNDLED_CLIENT_ID) {
+			status.setText("Not connected. Select Connect Microsoft account to sign in.");
 		} else if (auth.isSignedIn) {
 			status.addClass("mstd-settings-status--ok");
 			const account = auth.account;
@@ -91,21 +106,26 @@ export class MicrosoftTodoSettingTab extends PluginSettingTab {
 			.setName("Application (client) ID")
 			.setDesc(
 				createFragment((frag) => {
-					frag.appendText("From your Azure app registration. Register a free app at ");
+					frag.appendText("Optional. The plugin ships with one, so most people never need this. ");
+					frag.appendText("If your organisation blocks unapproved apps, register your own at ");
 					frag.createEl("a", { text: "Azure Portal → App registrations", href: AZURE_PORTAL_URL });
-					frag.appendText(", enable ");
+					frag.appendText(" with ");
 					frag.createEl("strong", { text: "Allow public client flows" });
-					frag.appendText(", and add the delegated ");
+					frag.appendText(" enabled and the delegated ");
 					frag.createEl("code", { text: "Tasks.ReadWrite" });
-					frag.appendText(" permission. See the plugin README for step-by-step instructions.");
+					frag.appendText(" permission, then paste its ID here. Clear the field to go back to the default.");
 				})
 			)
 			.addText((text) =>
 				text
-					.setPlaceholder("00000000-0000-0000-0000-000000000000")
-					.setValue(this.plugin.settings.clientId)
+					.setPlaceholder(BUNDLED_CLIENT_ID)
+					.setValue(
+						// Show the field empty while it's on the shipped default, so it
+						// reads as "nothing to do here" rather than a value to preserve.
+						this.plugin.settings.clientId === BUNDLED_CLIENT_ID ? "" : this.plugin.settings.clientId
+					)
 					.onChange(async (value) => {
-						const trimmed = value.trim();
+						const trimmed = value.trim() || BUNDLED_CLIENT_ID;
 						if (trimmed === this.plugin.settings.clientId) return;
 						this.plugin.settings.clientId = trimmed;
 						await this.plugin.saveSettings();
@@ -117,8 +137,9 @@ export class MicrosoftTodoSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("Directory (tenant)")
 			.setDesc(
-				"Use 'common' for personal and work accounts, 'consumers' for personal Microsoft accounts only, " +
-					"'organizations' for work/school only, or a specific tenant ID."
+				"Optional. 'common' accepts both personal and work accounts and suits almost everyone. Use " +
+					"'consumers' for personal Microsoft accounts only, 'organizations' for work/school only, or a " +
+					"specific tenant ID."
 			)
 			.addText((text) =>
 				text

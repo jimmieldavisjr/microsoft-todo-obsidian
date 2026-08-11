@@ -51,19 +51,13 @@ A ✅ appears in the left ribbon. Click it to open the panel.
 
 ## Signing in
 
-Microsoft asks every app that touches your tasks to be registered with them first — this one included. It's free and you only do it once. Five steps, about two minutes:
+Click the ✅ in the ribbon, then **Connect Microsoft account**.
 
-1. Go to [Azure Portal → App registrations](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade) and click **New registration**.
-2. Give it any name you like. Leave **Redirect URI** blank. Click **Register**.
-3. Copy the **Application (client) ID** from the page that appears.
-4. Click **Authentication** in the left menu, scroll to the bottom, switch **Allow public client flows** to **Yes**, and save.
-5. Click **API permissions** → **Add a permission** → **Microsoft Graph** → **Delegated permissions**, tick **`Tasks.ReadWrite`**, and add it.
+You'll get a short code. The browser opens on Microsoft's sign-in page — paste the code, sign in as you normally would, and close the tab. Obsidian notices you're done and your lists appear on their own.
 
-Back in Obsidian: **Settings → Microsoft To Do**, paste the ID, click **Connect Microsoft account**, and type the short code it gives you into the browser window that opens.
+That's the whole thing. No account to create, no settings to fill in first.
 
-> Steps 4 and 5 are the ones people skip, and Microsoft turns the sign-in away without them.
-
-*Using a work or school account? Your IT department may need to approve step 5. On a personal Microsoft account, set **Directory (tenant)** to `consumers` in the plugin settings.*
+*On a work or school account, your IT department may need to approve the app the first time. If that's blocked, see [Using your own Azure app](#using-your-own-azure-app) below.*
 
 ---
 
@@ -87,7 +81,9 @@ Any of these can be given a keyboard shortcut in **Settings → Hotkeys**.
 
 ## Your tasks and your privacy
 
-Your tasks travel directly between Obsidian and Microsoft. There's no server in the middle, no account to create, and nothing is collected, logged or sent anywhere else — which is the reason for the registration step above: it connects you to Microsoft as *you*, rather than through somebody else's app.
+Your tasks travel directly between Obsidian and Microsoft. There's no server in the middle, no account to create, and nothing is collected, logged or sent anywhere — not to me, not to anyone. When you sign in, you're signing in to Microsoft, and the key that comes back stays on your computer.
+
+You'll see a consent screen the first time listing exactly what the plugin can reach: your Microsoft To Do tasks, nothing else. Not your email, not your files. You can revoke it whenever you like at [My Apps](https://myapplications.microsoft.com/).
 
 Two honest caveats:
 
@@ -96,6 +92,22 @@ Two honest caveats:
 **My Day works a little differently here.** Microsoft doesn't let outside apps read the real My Day list — it's the one part of To Do they keep closed off. So the plugin builds its own: everything due today or overdue, across all your lists. Same idea, usually the same tasks, but it won't match the app exactly.
 
 And one thing it doesn't do yet: checkboxes written in your notes (`- [ ] like this`) stay as text. Linking those to real tasks means handling conflicts, deletions and offline edits, and doing it badly loses people's work — so it's being saved for its own release rather than rushed.
+
+---
+
+## Using your own Azure app
+
+Only worth reading if your workplace blocks unapproved apps, or you'd simply rather connect through a registration you control. Everyone else can skip this.
+
+1. Go to [Azure Portal → App registrations](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade) and click **New registration**.
+2. Give it any name. Leave **Redirect URI** blank. Click **Register**.
+3. Copy the **Application (client) ID**.
+4. Open **Authentication**, scroll to the bottom, set **Allow public client flows** to **Yes**, and save.
+5. Open **API permissions** → **Add a permission** → **Microsoft Graph** → **Delegated permissions**, and add **`Tasks.ReadWrite`**.
+
+Paste the ID into **Settings → Microsoft To Do → Application (client) ID**, then connect as usual. Clearing that field puts you back on the built-in app.
+
+*Steps 4 and 5 are the ones people miss; Microsoft refuses the sign-in without them.*
 
 ---
 
