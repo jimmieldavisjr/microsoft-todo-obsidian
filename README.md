@@ -25,53 +25,45 @@ Your Microsoft To Do tasks, living inside your vault.
 
 ---
 
-## What it is
+## What this is
 
-An Obsidian plugin that puts Microsoft To Do in a panel next to your notes.
+A panel that sits beside your notes and shows your Microsoft To Do lists.
 
-These are your real tasks, not a copy. Tick something off in Obsidian and it's ticked off on your phone a second later. Add a task here and it shows up in Outlook. It's the same account, the same lists, just a different window onto them.
+These are your real tasks — not a copy, not an import. Tick something off in Obsidian and it's ticked off on your phone a moment later. Add a task here and it turns up in Outlook. Same account, same lists, just another window onto them.
 
-## How it helps
+## What it's good for
 
-**You stop losing tasks to the gap between apps.** You're writing notes and something occurs to you — a follow-up, a deadline, a thing you promised someone. Normally that means leaving Obsidian, finding the To Do app, and by then you've lost your place. Here it's one keystroke.
+**Catching things before they slip away.** You're deep in a note and something occurs to you — a follow-up, a deadline, something you promised someone. Normally that means leaving Obsidian, finding the To Do app, and losing your train of thought on the way back. Here it's a keystroke, and you never look up.
 
-**Your notes can become tasks.** Highlight a line while writing and send it straight to a list. Or turn a whole note into a task — "finish this draft" — and the plugin attaches a link back, so tapping it on your phone opens that exact note.
+**Turning writing into work.** Highlight a sentence and send it to a list. Or send an entire note — "finish this draft" — and the task carries a link back, so tapping it on your phone opens that note in your vault.
 
-**You can see what's due without switching context.** My Day and your lists sit in the sidebar while you work. No alt-tabbing to check whether something's due today.
+**Seeing what's due while you work.** My Day and your lists stay in the sidebar. No switching windows to find out whether something's due today.
 
-**It stays out of the way.** No new format to learn, no files it writes into your vault, nothing to migrate. If you uninstall it tomorrow, your notes are exactly as they were and your tasks are all still in Microsoft To Do.
+**Leaving no trace.** It doesn't write files into your vault or invent a new format. Uninstall it tomorrow and your notes are untouched, your tasks all still in Microsoft To Do.
 
 ---
 
-## Install
+## Getting it
 
-**1. Download** `main.js`, `manifest.json` and `styles.css` from the [latest release](../../releases/latest).
+In Obsidian: **Settings → Community plugins → Browse**, search for **Microsoft To Do**, and click **Install**, then **Enable**.
 
-**2. Put them** in a folder called `microsoft-todo-obsidian` inside your vault:
+A ✅ appears in the left ribbon. Click it to open the panel.
 
-```text
-YourVault/.obsidian/plugins/microsoft-todo-obsidian/
-```
+## Signing in
 
-`.obsidian` is hidden — paste the path into your file manager's address bar if you can't see it.
+Microsoft asks every app that touches your tasks to be registered with them first — this one included. It's free and you only do it once. Five steps, about two minutes:
 
-**3. Restart Obsidian**, then enable **Microsoft To Do** under **Settings → Community plugins**.
+1. Go to [Azure Portal → App registrations](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade) and click **New registration**.
+2. Give it any name you like. Leave **Redirect URI** blank. Click **Register**.
+3. Copy the **Application (client) ID** from the page that appears.
+4. Click **Authentication** in the left menu, scroll to the bottom, switch **Allow public client flows** to **Yes**, and save.
+5. Click **API permissions** → **Add a permission** → **Microsoft Graph** → **Delegated permissions**, tick **`Tasks.ReadWrite`**, and add it.
 
-## Connect your account
+Back in Obsidian: **Settings → Microsoft To Do**, paste the ID, click **Connect Microsoft account**, and type the short code it gives you into the browser window that opens.
 
-Microsoft requires any app that touches your tasks to be registered with them. It's free, takes about two minutes, and you only do it once. The upside is that your tasks go straight between Obsidian and Microsoft — nothing passes through anyone else's server.
+> Steps 4 and 5 are the ones people skip, and Microsoft turns the sign-in away without them.
 
-1. Open [Azure Portal → App registrations](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade) → **New registration**.
-2. Name it anything. Leave **Redirect URI** empty. Click **Register**.
-3. Copy the **Application (client) ID** shown on the next page.
-4. Open **Authentication**, scroll to the bottom, set **Allow public client flows** to **Yes**, and save.
-5. Open **API permissions** → **Add a permission** → **Microsoft Graph** → **Delegated permissions** → add **`Tasks.ReadWrite`**.
-
-Then in Obsidian: **Settings → Microsoft To Do**, paste the ID, click **Connect Microsoft account**, and enter the short code it gives you in your browser.
-
-> Steps 4 and 5 are the ones people skip. Without them Microsoft refuses the sign-in.
-
-*Work or school account? Your IT department may need to approve step 5. Personal account? Set **Directory (tenant)** to `consumers`.*
+*Using a work or school account? Your IT department may need to approve step 5. On a personal Microsoft account, set **Directory (tenant)** to `consumers` in the plugin settings.*
 
 ---
 
@@ -82,37 +74,45 @@ Then in Obsidian: **Settings → Microsoft To Do**, paste the ID, click **Connec
 | Open the panel | Click the ✅ in the ribbon |
 | Add a task | Type in the box at the top, press `Enter` |
 | Complete or reopen | Click the circle |
-| See details or notes | Click the task |
+| See details and notes | Click the task |
 | Rename | Double-click the title |
 | Set a due date | Click **Due date** → Today, Tomorrow, Next week, or pick one |
 | Mark important | Click the star |
 | Send a note as a task | Command Palette → *Add current note as task* |
-| Send a highlight as a task | Select text → Command Palette → *Add selected text as task* |
+| Send a highlight as a task | Select the text → Command Palette → *Add selected text as task* |
 
-Every command can take a keyboard shortcut in **Settings → Hotkeys**.
-
----
-
-## How it's made
-
-**TypeScript and React 18**, bundled into a single `main.js` with **esbuild**. React handles the panel; the Obsidian-facing parts — the view, commands, ribbon and settings — are plain TypeScript against Obsidian's own API, so the plugin behaves like a native part of the app rather than a webpage embedded in one.
-
-Tasks come from the **Microsoft Graph API**, the same service the official To Do apps use. Sign-in uses OAuth **device code flow** — the one where you're given a short code to type into a browser. It's chosen because it needs no redirect URL and no client secret, which means it works identically on Windows, macOS and mobile, and there's no secret baked into a plugin anyone can read.
-
-Everything renders from Obsidian's own CSS variables, so the panel follows your theme in light and dark without being told about it.
-
-Prefer to build it yourself rather than download? `npm install && npm run build`.
+Any of these can be given a keyboard shortcut in **Settings → Hotkeys**.
 
 ---
 
-## Good to know
+## Your tasks and your privacy
 
-**My Day works a little differently here.** Microsoft doesn't let outside apps read the real My Day list — it's the one part of To Do they keep closed. So this builds its own version: everything due today or overdue, across all your lists. Same idea, usually the same tasks, but it won't match the app exactly.
+Your tasks travel directly between Obsidian and Microsoft. There's no server in the middle, no account to create, and nothing is collected, logged or sent anywhere else — which is the reason for the registration step above: it connects you to Microsoft as *you*, rather than through somebody else's app.
 
-**Your sign-in is stored in your vault**, in the plugin's folder, unencrypted — Obsidian gives plugins nowhere safer to keep it. If your vault syncs to the cloud, that file goes with it. Signing out removes it.
+Two honest caveats:
 
-**Markdown checkboxes aren't synced.** A `- [ ] task` in a note is still just text. Linking the two properly means handling conflicts, deletions and offline edits, and doing that badly loses people's data — so it's a deliberate next step rather than a missing feature.
+**Your sign-in is kept in your vault**, in the plugin's own folder, and it isn't encrypted — Obsidian doesn't give plugins anywhere safer to store it. If your vault syncs to a cloud service, that file travels with it. Signing out removes it.
+
+**My Day works a little differently here.** Microsoft doesn't let outside apps read the real My Day list — it's the one part of To Do they keep closed off. So the plugin builds its own: everything due today or overdue, across all your lists. Same idea, usually the same tasks, but it won't match the app exactly.
+
+And one thing it doesn't do yet: checkboxes written in your notes (`- [ ] like this`) stay as text. Linking those to real tasks means handling conflicts, deletions and offline edits, and doing it badly loses people's work — so it's being saved for its own release rather than rushed.
 
 ---
 
-MIT licensed. Not affiliated with or endorsed by Microsoft.
+## Under the hood
+
+Built with TypeScript and React, talking to Microsoft Graph — the same service the official Microsoft To Do apps use. The panel borrows its colours from your Obsidian theme, so it looks at home in light mode, dark mode, or whatever you've customised.
+
+Free and open source under the MIT licence. The code is all here if you'd like to look, and issues and suggestions are welcome.
+
+## If you find it useful
+
+This is built and maintained in my own time, and it's free for everyone.
+
+If it saves you some friction and you'd like to say thanks, you can [sponsor the project](https://github.com/sponsors/jimmieldavisjr). There's a ♥ next to the plugin in Obsidian's plugin list that goes to the same place.
+
+Not into sponsoring? Starring the repo, reporting a bug, or telling someone who lives in both apps helps just as much.
+
+---
+
+Not affiliated with or endorsed by Microsoft. Microsoft To Do and Microsoft Graph are trademarks of Microsoft Corporation.
