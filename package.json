@@ -1,0 +1,43 @@
+{
+  "name": "microsoft-todo-obsidian",
+  "version": "1.0.0",
+  "description": "Microsoft To Do for Obsidian - browse lists, create, edit and complete tasks without leaving your vault.",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc --noEmit --skipLibCheck && node esbuild.config.mjs production",
+    "typecheck": "tsc --noEmit --skipLibCheck",
+    "install-to-vault": "node scripts/install-to-vault.mjs"
+  },
+  "keywords": [
+    "obsidian",
+    "obsidian-plugin",
+    "microsoft-todo",
+    "microsoft-graph",
+    "tasks"
+  ],
+  "author": "Jimmie Davis",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jimmieldavisjr/microsoft-todo-obsidian.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jimmieldavisjr/microsoft-todo-obsidian/issues"
+  },
+  "homepage": "https://github.com/jimmieldavisjr/microsoft-todo-obsidian#readme",
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "builtin-modules": "^4.0.0",
+    "esbuild": "^0.24.2",
+    "obsidian": "^1.7.2",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

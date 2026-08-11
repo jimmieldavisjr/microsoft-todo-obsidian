@@ -1,0 +1,1139 @@
+/* -------------------------------------------------------------------------
+   Microsoft To Do for Obsidian
+
+   Two things shape this stylesheet:
+
+   1. Specificity. Every panel rule is scoped `.mstd-view .thing` - two classes
+      deep - so it outranks the element-level button/input styling that themes
+      like Minimal apply inside a workspace leaf. Without it, task titles render
+      as centred white pills and list rows look like form fields.
+
+   2. Anatomy. Rows, composer and menus follow Microsoft To Do's own structure:
+      tinted surface, raised task cards, completion circle left, importance star
+      right, and a labelled due-date control rather than bare date chips.
+
+   Colours come from Obsidian's variables only, so the panel follows the active
+   theme in both light and dark.
+   ------------------------------------------------------------------------- */
+
+/* ------------------------------------------------------------------ shell */
+
+.mstd-view {
+	padding: 0;
+	height: 100%;
+	overflow: hidden;
+	font-size: var(--font-ui-small);
+}
+
+.mstd-view .mstd-panel {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	min-height: 0;
+	background-color: var(--background-secondary);
+}
+
+/* Neutralise theme button styling once, then build back up per component. */
+.mstd-view button {
+	display: inline-flex;
+	align-items: center;
+	width: auto;
+	min-width: 0;
+	height: auto;
+	margin: 0;
+	padding: 0;
+	border: none;
+	border-radius: var(--radius-s);
+	background-color: transparent;
+	background-image: none;
+	box-shadow: none;
+	color: inherit;
+	font-family: inherit;
+	font-size: inherit;
+	font-weight: inherit;
+	line-height: 1.4;
+	text-align: left;
+	white-space: normal;
+	cursor: pointer;
+	-webkit-appearance: none;
+	appearance: none;
+}
+
+.mstd-view button:hover,
+.mstd-view button:focus,
+.mstd-view button:active {
+	box-shadow: none;
+}
+
+.mstd-view button:focus-visible {
+	outline: 2px solid var(--background-modifier-border-focus, var(--color-accent));
+	outline-offset: 1px;
+}
+
+.mstd-view input,
+.mstd-view textarea,
+.mstd-view select {
+	font-family: inherit;
+}
+
+.mstd-view .mstd-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+
+.mstd-view .mstd-icon .svg-icon {
+	width: var(--icon-s);
+	height: var(--icon-s);
+	stroke-width: 1.75px;
+}
+
+/* ----------------------------------------------------------------- header */
+
+/* Command band: heading and composer on one card-layer surface, squared and
+   full-bleed like the list navigation, closed off by a single stroke. Fluent's
+   layering - chrome above, content below - rather than a floating card. */
+.mstd-view .mstd-topbar {
+	flex-shrink: 0;
+	background-color: var(--background-primary);
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+/* Title block: one strong heading, actions on its baseline, quiet subtitle. */
+.mstd-view .mstd-header {
+	flex-shrink: 0;
+	padding: var(--size-4-3) var(--size-4-3) var(--size-4-2);
+}
+
+.mstd-view .mstd-header-top {
+	display: flex;
+	align-items: center;
+	gap: var(--size-2-3);
+	min-height: 28px;
+}
+
+.mstd-view .mstd-header-icon {
+	color: var(--color-accent);
+}
+
+.mstd-view .mstd-header-icon .svg-icon {
+	width: 18px;
+	height: 18px;
+}
+
+.mstd-view .mstd-header-title {
+	flex: 1;
+	min-width: 0;
+	margin: 0;
+	font-size: var(--font-ui-large);
+	font-weight: var(--font-bold);
+	line-height: 1.2;
+	color: var(--text-normal);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mstd-view .mstd-header-actions {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	flex-shrink: 0;
+	margin-right: calc(-1 * var(--size-2-2));
+}
+
+/* Indented to the title's text edge, not the panel edge. */
+.mstd-view .mstd-header-subtitle {
+	padding-left: calc(18px + var(--size-2-3));
+	margin-top: 1px;
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+	line-height: 1.4;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mstd-view .mstd-icon-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: var(--size-2-2);
+	border-radius: var(--radius-s);
+	color: var(--text-muted);
+	transition: background-color 120ms ease, color 120ms ease;
+}
+
+.mstd-view .mstd-icon-button:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.mstd-view .mstd-icon-button:disabled {
+	opacity: 0.45;
+	cursor: default;
+}
+
+.mstd-view .mstd-icon-button:disabled:hover {
+	background-color: transparent;
+}
+
+.mstd-view .mstd-icon-button.is-spinning .mstd-icon {
+	animation: mstd-spin 1s linear infinite;
+}
+
+@keyframes mstd-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.mstd-view .mstd-text-button {
+	display: inline;
+	padding: 0;
+	color: var(--text-accent);
+	font-size: var(--font-ui-smaller);
+}
+
+.mstd-view .mstd-text-button:hover {
+	text-decoration: underline;
+}
+
+.mstd-view .mstd-text-button.mod-warning {
+	color: var(--text-error);
+}
+
+/* ------------------------------------------------------------------ banner */
+
+.mstd-view .mstd-banner {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--size-2-3);
+	flex-shrink: 0;
+	margin: 0 var(--size-4-3) var(--size-2-3);
+	padding: var(--size-2-3);
+	border-radius: var(--radius-m);
+	background-color: var(--background-modifier-error);
+	color: var(--text-normal);
+	font-size: var(--font-ui-smaller);
+	line-height: 1.45;
+}
+
+.mstd-view .mstd-banner .mstd-icon {
+	color: var(--text-error);
+	margin-top: 1px;
+}
+
+.mstd-view .mstd-banner-body {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-2-2);
+	min-width: 0;
+}
+
+.mstd-view .mstd-banner-text {
+	word-break: break-word;
+}
+
+.mstd-view .mstd-banner-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--size-4-2);
+}
+
+/* -------------------------------------------------------------- task area */
+
+.mstd-view .mstd-task-scroll {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	padding: var(--size-4-2) var(--size-4-3) 0;
+}
+
+.mstd-view .mstd-count {
+	flex-shrink: 0;
+	min-width: 1.6em;
+	padding: 1px var(--size-2-2);
+	border-radius: var(--radius-l);
+	background-color: var(--background-modifier-border);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	font-weight: var(--font-medium);
+	font-variant-numeric: tabular-nums;
+	text-align: center;
+	line-height: 1.5;
+}
+
+/* --------------------------------------------------------------- composer */
+
+/* Part of the band, not a card in it: no border, no radius, no shadow. Focus
+   is signalled by Fluent's accent underline plus a subtle field fill. */
+.mstd-view .mstd-composer {
+	border: none;
+	border-top: 1px solid var(--background-modifier-border);
+	border-radius: 0;
+	background-color: transparent;
+	box-shadow: none;
+	transition: background-color 120ms ease, box-shadow 120ms ease;
+}
+
+.mstd-view .mstd-composer.is-active {
+	background-color: var(--background-modifier-form-field, var(--background-primary-alt));
+	box-shadow: inset 0 -2px 0 var(--color-accent);
+}
+
+.mstd-view .mstd-composer-main {
+	display: flex;
+	align-items: center;
+	gap: var(--size-2-3);
+	padding: var(--size-4-2) var(--size-4-3);
+	min-height: 34px;
+}
+
+.mstd-view .mstd-composer-bullet {
+	display: inline-flex;
+	flex-shrink: 0;
+	color: var(--text-faint);
+	transition: color 120ms ease;
+}
+
+.mstd-view .mstd-composer.is-active .mstd-composer-bullet {
+	color: var(--color-accent);
+}
+
+.mstd-view .mstd-composer-input {
+	flex: 1;
+	min-width: 0;
+	height: auto;
+	padding: 0;
+	border: none;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	line-height: 1.5;
+}
+
+.mstd-view .mstd-composer-input:focus,
+.mstd-view .mstd-composer-input:active {
+	border: none;
+	box-shadow: none;
+	outline: none;
+}
+
+.mstd-view .mstd-composer-toolbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--size-2-3);
+	padding: 0 var(--size-4-3) var(--size-4-2);
+}
+
+.mstd-view .mstd-composer-options {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--size-2-2);
+	min-width: 0;
+}
+
+.mstd-view .mstd-composer-list {
+	max-width: 11ch;
+	height: auto;
+	padding: 1px var(--size-2-2);
+	font-size: var(--font-ui-smaller);
+}
+
+.mstd-view .mstd-composer-submit {
+	flex-shrink: 0;
+	justify-content: center;
+	padding: var(--size-2-1) var(--size-4-2);
+	border-radius: var(--radius-s);
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+	font-size: var(--font-ui-smaller);
+	font-weight: var(--font-medium);
+	transition: background-color 120ms ease, opacity 120ms ease;
+}
+
+.mstd-view .mstd-composer-submit:hover:not(:disabled) {
+	background-color: var(--interactive-accent-hover);
+}
+
+/* Outlined rather than a washed-out accent fill, which went muddy grey. */
+.mstd-view .mstd-composer-submit:disabled {
+	background-color: transparent;
+	box-shadow: inset 0 0 0 1px var(--background-modifier-border);
+	color: var(--text-faint);
+	cursor: default;
+}
+
+/* ------------------------------------------------------------------ chips */
+
+.mstd-view .mstd-chip-button {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--size-2-1);
+	padding: 2px var(--size-2-2);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-l);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	line-height: 1.5;
+	white-space: nowrap;
+	transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.mstd-view .mstd-chip-button:hover:not(:disabled) {
+	background-color: var(--background-modifier-hover);
+	border-color: var(--background-modifier-border-hover);
+	color: var(--text-normal);
+}
+
+.mstd-view .mstd-chip-button.is-active {
+	border-color: var(--color-accent);
+	color: var(--color-accent);
+	font-weight: var(--font-medium);
+}
+
+.mstd-view .mstd-chip-button.is-active .svg-icon {
+	fill: currentColor;
+	fill-opacity: 0.18;
+}
+
+.mstd-view .mstd-chip-button:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+.mstd-view .mstd-chip-button .svg-icon {
+	width: 13px;
+	height: 13px;
+}
+
+.mstd-view .mstd-chip-clear {
+	display: inline-flex;
+	justify-content: center;
+	padding: 2px;
+	margin-left: calc(-1 * var(--size-2-1));
+	border-radius: 50%;
+	color: var(--text-faint);
+}
+
+.mstd-view .mstd-chip-clear:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.mstd-view .mstd-chip-clear .svg-icon {
+	width: 12px;
+	height: 12px;
+}
+
+.mstd-view .mstd-date-input {
+	height: auto;
+	padding: 2px var(--size-2-2);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	background-color: var(--background-primary);
+	color: var(--text-normal);
+	font-size: var(--font-ui-smaller);
+	line-height: 1.5;
+}
+
+/* ------------------------------------------------------------------- menu */
+
+.mstd-view .mstd-due-control {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	gap: 0;
+}
+
+.mstd-view .mstd-menu {
+	position: absolute;
+	top: calc(100% + 4px);
+	left: 0;
+	z-index: 30;
+	min-width: 190px;
+	padding: var(--size-2-2);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background-color: var(--background-primary);
+	box-shadow: var(--shadow-l, 0 8px 24px rgba(0, 0, 0, 0.22));
+	animation: mstd-menu-in 110ms ease-out;
+}
+
+.mstd-view .mstd-menu.is-above {
+	top: auto;
+	bottom: calc(100% + 4px);
+}
+
+@keyframes mstd-menu-in {
+	from {
+		opacity: 0;
+		transform: translateY(-3px);
+	}
+}
+
+.mstd-view .mstd-menu-item {
+	display: flex;
+	align-items: center;
+	gap: var(--size-2-3);
+	width: 100%;
+	padding: var(--size-2-2) var(--size-2-3);
+	border-radius: var(--radius-s);
+	color: var(--text-normal);
+	font-size: var(--font-ui-smaller);
+}
+
+.mstd-view .mstd-menu-item:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.mstd-view .mstd-menu-item .svg-icon {
+	width: 15px;
+	height: 15px;
+	color: var(--text-muted);
+}
+
+.mstd-view .mstd-menu-label {
+	flex: 1;
+	min-width: 0;
+}
+
+.mstd-view .mstd-menu-hint {
+	flex-shrink: 0;
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+}
+
+.mstd-view .mstd-menu-separator {
+	height: 1px;
+	margin: var(--size-2-2) var(--size-2-2);
+	background-color: var(--background-modifier-border);
+}
+
+.mstd-view .mstd-menu-picker {
+	padding: var(--size-2-1) var(--size-2-3) var(--size-2-2);
+}
+
+.mstd-view .mstd-menu-picker .mstd-date-input {
+	width: 100%;
+}
+
+/* ------------------------------------------------------------------ tasks */
+
+.mstd-view .mstd-task-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-2);
+	padding-bottom: var(--size-4-3);
+}
+
+.mstd-view .mstd-tasks {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-2-2);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+/* Raised card on the tinted surface - To Do's row treatment, at Fluent's
+   tighter 4px corner so it sits consistently with the squared chrome. */
+.mstd-view .mstd-task {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	background-color: var(--background-primary);
+	transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.mstd-view .mstd-task:hover {
+	border-color: var(--background-modifier-border-hover);
+	box-shadow: var(--shadow-s);
+}
+
+.mstd-view .mstd-task.is-expanded {
+	border-color: var(--color-accent);
+	box-shadow: var(--shadow-s);
+}
+
+.mstd-view .mstd-task.is-completed {
+	background-color: var(--background-primary-alt);
+}
+
+.mstd-view .mstd-task.is-busy {
+	opacity: 0.55;
+}
+
+.mstd-view .mstd-task-row {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--size-2-3);
+	padding: var(--size-4-2);
+	min-height: 34px;
+}
+
+.mstd-view .mstd-checkbox {
+	flex-shrink: 0;
+	justify-content: center;
+	padding: 0;
+	margin-top: 1px;
+	color: var(--text-faint);
+	border-radius: 50%;
+	transition: color 120ms ease, transform 120ms ease;
+}
+
+.mstd-view .mstd-checkbox:hover:not(:disabled) {
+	color: var(--color-accent);
+	transform: scale(1.12);
+}
+
+.mstd-view .mstd-task.is-completed .mstd-checkbox {
+	color: var(--color-accent);
+}
+
+.mstd-view .mstd-task.is-completed .mstd-checkbox .svg-icon {
+	fill: currentColor;
+	fill-opacity: 0.15;
+}
+
+.mstd-view .mstd-task-body {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+
+.mstd-view .mstd-task-title {
+	display: block;
+	width: 100%;
+	padding: 0;
+	background: transparent;
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	line-height: 1.4;
+	text-align: left;
+	white-space: normal;
+	word-break: break-word;
+	overflow-wrap: anywhere;
+}
+
+.mstd-view .mstd-task-title:hover {
+	background-color: transparent;
+}
+
+.mstd-view .mstd-task.is-completed .mstd-task-title {
+	color: var(--text-faint);
+	text-decoration: line-through;
+}
+
+.mstd-view .mstd-task-title-input {
+	width: 100%;
+	height: auto;
+	padding: 0;
+	border: none;
+	border-bottom: 1px solid var(--color-accent);
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	line-height: 1.4;
+}
+
+.mstd-view .mstd-task-title-input:focus {
+	box-shadow: none;
+	outline: none;
+}
+
+.mstd-view .mstd-task-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--size-2-2);
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+	line-height: 1.4;
+}
+
+.mstd-view .mstd-task-due {
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+}
+
+.mstd-view .mstd-task-meta .svg-icon {
+	width: 12px;
+	height: 12px;
+}
+
+.mstd-view .mstd-task-due.is-overdue {
+	color: var(--text-error);
+	font-weight: var(--font-medium);
+}
+
+.mstd-view .mstd-task-due.is-today {
+	color: var(--color-accent);
+	font-weight: var(--font-medium);
+}
+
+.mstd-view .mstd-task-note-flag {
+	display: inline-flex;
+}
+
+.mstd-view .mstd-task-list-name {
+	padding: 0 var(--size-2-2);
+	border-radius: var(--radius-l);
+	background-color: var(--background-modifier-border);
+	color: var(--text-muted);
+	max-width: 12ch;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mstd-view .mstd-task-actions {
+	display: flex;
+	align-items: center;
+	gap: 0;
+	flex-shrink: 0;
+}
+
+.mstd-view .mstd-task-actions .mstd-icon-button {
+	padding: var(--size-2-1);
+}
+
+.mstd-view .mstd-task-actions .svg-icon {
+	width: 15px;
+	height: 15px;
+}
+
+.mstd-view .mstd-task-edit {
+	opacity: 0;
+	transition: opacity 120ms ease;
+}
+
+.mstd-view .mstd-task:hover .mstd-task-edit,
+.mstd-view .mstd-task-edit:focus-visible {
+	opacity: 1;
+}
+
+.mstd-view .mstd-task-star {
+	color: var(--text-faint);
+	opacity: 0;
+	transition: opacity 120ms ease, color 120ms ease;
+}
+
+.mstd-view .mstd-task:hover .mstd-task-star,
+.mstd-view .mstd-task-star:focus-visible,
+.mstd-view .mstd-task-star.is-active {
+	opacity: 1;
+}
+
+.mstd-view .mstd-task-star.is-active {
+	color: var(--text-accent);
+}
+
+.mstd-view .mstd-task-star.is-active .svg-icon {
+	fill: currentColor;
+	fill-opacity: 0.25;
+}
+
+/* Touch devices have no hover, so reveal-on-hover controls must stay visible. */
+@media (pointer: coarse) {
+	.mstd-view .mstd-task-star,
+	.mstd-view .mstd-task-edit {
+		opacity: 1;
+	}
+}
+
+/* ---------------------------------------------------------------- details */
+
+.mstd-view .mstd-task-details {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-2-3);
+	padding: var(--size-2-3);
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.mstd-view .mstd-detail-row {
+	display: flex;
+	align-items: center;
+	gap: var(--size-2-2);
+	flex-wrap: wrap;
+}
+
+.mstd-view .mstd-detail-row--stacked {
+	flex-direction: column;
+	align-items: stretch;
+	gap: var(--size-2-1);
+}
+
+.mstd-view .mstd-notes-input {
+	width: 100%;
+	min-height: 4.5em;
+	padding: var(--size-2-2);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	background-color: var(--background-primary);
+	color: var(--text-normal);
+	font-size: var(--font-ui-smaller);
+	line-height: 1.45;
+	resize: vertical;
+}
+
+.mstd-view .mstd-detail-hint {
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+}
+
+.mstd-view .mstd-detail-footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--size-2-2);
+	flex-wrap: wrap;
+}
+
+.mstd-view .mstd-detail-actions {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--size-4-2);
+}
+
+.mstd-view .mstd-detail-delete {
+	padding: var(--size-2-1);
+	color: var(--text-faint);
+}
+
+.mstd-view .mstd-detail-delete:hover {
+	color: var(--text-error);
+	background-color: var(--background-modifier-error);
+}
+
+.mstd-view .mstd-chip {
+	padding: 1px var(--size-2-2);
+	border-radius: var(--radius-l);
+	background-color: var(--background-modifier-border);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	max-width: 14ch;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* -------------------------------------------------------------- completed */
+
+.mstd-view .mstd-completed {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-2-1);
+}
+
+.mstd-view .mstd-completed-toggle {
+	display: flex;
+	align-items: center;
+	gap: var(--size-2-2);
+	align-self: flex-start;
+	padding: var(--size-2-1) var(--size-2-2);
+	border-radius: var(--radius-s);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	font-weight: var(--font-medium);
+}
+
+.mstd-view .mstd-completed-toggle:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.mstd-view .mstd-completed-toggle .svg-icon {
+	width: 14px;
+	height: 14px;
+}
+
+/* ------------------------------------------------------------ empty state */
+
+.mstd-view .mstd-empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: var(--size-2-3);
+	padding: var(--size-4-8) var(--size-4-3);
+	color: var(--text-faint);
+	text-align: center;
+}
+
+.mstd-view .mstd-empty p {
+	margin: 0;
+	max-width: 30ch;
+	font-size: var(--font-ui-smaller);
+	line-height: 1.5;
+}
+
+.mstd-view .mstd-empty-icon {
+	opacity: 0.4;
+}
+
+.mstd-view .mstd-empty-icon .svg-icon {
+	width: var(--icon-xl);
+	height: var(--icon-xl);
+	stroke-width: 1.25px;
+}
+
+.mstd-view .mstd-spinner {
+	width: var(--icon-m);
+	height: var(--icon-m);
+	border: 2px solid var(--background-modifier-border);
+	border-top-color: var(--color-accent);
+	border-radius: 50%;
+	animation: mstd-spin 0.8s linear infinite;
+}
+
+/* --------------------------------------------------------------- list nav */
+
+/* Rows run edge to edge so the selected item reads as a filled band, the way
+   Microsoft To Do's navigation does - not as an inset pill. */
+.mstd-view .mstd-lists {
+	display: flex;
+	flex-direction: column;
+	flex-shrink: 0;
+	gap: 0;
+	padding: var(--size-2-2) 0;
+	border-top: 1px solid var(--background-modifier-border);
+	background-color: var(--background-secondary);
+}
+
+.mstd-view .mstd-lists-toggle {
+	display: flex;
+	align-items: center;
+	gap: var(--size-2-1);
+	align-self: flex-start;
+	margin: 0 var(--size-4-2) var(--size-2-1);
+	padding: var(--size-2-1) var(--size-2-2);
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+	font-weight: var(--font-semibold);
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+}
+
+.mstd-view .mstd-lists-toggle:hover {
+	color: var(--text-muted);
+}
+
+.mstd-view .mstd-lists-toggle .svg-icon {
+	width: 13px;
+	height: 13px;
+}
+
+.mstd-view .mstd-list-items {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	max-height: 38vh;
+	overflow-y: auto;
+}
+
+.mstd-view .mstd-list-item {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2);
+	width: 100%;
+	padding: var(--size-4-2) var(--size-4-3);
+	border-radius: 0;
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	line-height: 1.4;
+	transition: background-color 100ms ease, color 100ms ease;
+}
+
+.mstd-view .mstd-list-item .svg-icon {
+	width: 16px;
+	height: 16px;
+}
+
+.mstd-view .mstd-list-item:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+/* Built from the accent's own HSL channels so the fill tracks whatever accent
+   colour the user has set, and stays legible in light and dark themes. */
+.mstd-view .mstd-list-item.is-active {
+	background-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.14);
+	color: var(--text-normal);
+	font-weight: var(--font-semibold);
+	box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.mstd-view .mstd-list-item.is-active:hover {
+	background-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.2);
+}
+
+.mstd-view .mstd-list-item.is-active .mstd-icon {
+	color: var(--color-accent);
+}
+
+.mstd-view .mstd-list-label {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mstd-view .mstd-list-separator {
+	height: 1px;
+	margin: var(--size-2-2) var(--size-4-3);
+	background-color: var(--background-modifier-border);
+	list-style: none;
+}
+
+.mstd-view .mstd-list-empty {
+	padding: var(--size-2-2) var(--size-4-3);
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+}
+
+/* ----------------------------------------------------------------- footer */
+
+.mstd-view .mstd-footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--size-2-2);
+	flex-shrink: 0;
+	padding: var(--size-2-2) var(--size-4-3) var(--size-4-2);
+	border-top: 1px solid var(--background-modifier-border);
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+}
+
+.mstd-view .mstd-footer span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mstd-view .mstd-footer-link {
+	flex-shrink: 0;
+	color: var(--text-faint);
+	text-decoration: none;
+}
+
+.mstd-view .mstd-footer-link:hover {
+	color: var(--text-accent);
+	text-decoration: underline;
+}
+
+/* ------------------------------------------------------------ setup cards */
+
+.mstd-view .mstd-setup {
+	align-items: center;
+	justify-content: center;
+	gap: var(--size-4-3);
+	padding: var(--size-4-6) var(--size-4-4);
+	text-align: center;
+}
+
+.mstd-view .mstd-setup h2 {
+	margin: 0;
+	font-size: var(--font-ui-medium);
+	font-weight: var(--font-semibold);
+	color: var(--text-normal);
+}
+
+.mstd-view .mstd-setup p {
+	margin: 0;
+	max-width: 34ch;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	line-height: 1.55;
+}
+
+.mstd-view .mstd-setup .mstd-setup-icon {
+	color: var(--text-faint);
+	opacity: 0.55;
+}
+
+.mstd-view .mstd-setup-icon .svg-icon {
+	width: var(--icon-xl);
+	height: var(--icon-xl);
+	stroke-width: 1.25px;
+}
+
+/* The one place we want Obsidian's real button styling back. */
+.mstd-view .mstd-setup button.mod-cta {
+	display: inline-flex;
+	justify-content: center;
+	padding: var(--size-2-3) var(--size-4-3);
+	border-radius: var(--radius-s);
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+	font-weight: var(--font-medium);
+	text-align: center;
+}
+
+.mstd-view .mstd-setup button.mod-cta:hover:not(:disabled) {
+	background-color: var(--interactive-accent-hover);
+}
+
+.mstd-view .mstd-setup button.mod-cta:disabled {
+	opacity: 0.6;
+	cursor: default;
+}
+
+/* -------------------------------------------------------------------------
+   Outside the view: modals and the settings tab.
+   ------------------------------------------------------------------------- */
+
+.mstd-device-code {
+	margin: var(--size-4-3) 0;
+	padding: var(--size-4-3);
+	border: 1px dashed var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background-color: var(--background-secondary);
+	color: var(--text-normal);
+	font-family: var(--font-monospace);
+	font-size: 1.6em;
+	font-weight: var(--font-bold);
+	letter-spacing: 0.14em;
+	text-align: center;
+	user-select: text;
+}
+
+.mstd-device-hint {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	word-break: break-word;
+}
+
+.mstd-modal-input {
+	width: 100%;
+}
+
+.mstd-settings-status {
+	margin-bottom: var(--size-4-2);
+	padding: var(--size-2-3);
+	border-radius: var(--radius-s);
+	background-color: var(--background-secondary);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.mstd-settings-status--ok {
+	color: var(--text-success, var(--text-normal));
+}
+
+.mstd-settings-status--warning {
+	color: var(--text-warning, var(--text-muted));
+}
