@@ -2,27 +2,6 @@
 
 Your Microsoft To Do tasks, living inside your vault.
 
-```text
-┌──────────────────────────────────────────────┐
-│  ☀  My Day                          ⟳    ⚙  │
-│     Monday, 10 August                        │
-│  ─────────────────────────────────────────   │
-│  +  Add a task                               │
-│     [ 📅 Due date ]  [ ★ Important ]   [Add] │
-├══════════════════════════════════════════════┤
-│  ○  Finish WGU assignment                    │
-│       📅 Yesterday   Tasks                ★  │
-│  ○  Review internship material               │
-│       📅 Today   School                      │
-│  ○  Work on project                          │
-│       📅 Today   Work                        │
-├──────────────────────────────────────────────┤
-│  ⌄ LISTS                                     │
-│  ☀  My Day        3    ⌂  Tasks          8   │
-│  ☆  Important     2    ⚑  Flagged Emails 3   │
-└──────────────────────────────────────────────┘
-```
-
 ---
 
 ## What this is
