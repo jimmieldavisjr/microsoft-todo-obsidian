@@ -17,6 +17,7 @@ import {
 	BUNDLED_CLIENT_ID,
 	DEFAULT_SETTINGS,
 	MicrosoftTodoSettingTab,
+	SUPERSEDED_CLIENT_IDS,
 	type MicrosoftTodoSettings,
 } from "./settings/MicrosoftTodoSettings";
 import {
@@ -110,10 +111,12 @@ export default class MicrosoftTodoPlugin extends Plugin {
 	async loadSettings(): Promise<void> {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 
-		// Anyone who installed before the plugin shipped its own app registration
-		// has an empty clientId saved, and a saved value wins over the default -
-		// so without this they'd stay stuck on the setup screen after updating.
-		if (!this.settings.clientId.trim()) {
+		// A saved value always beats the default, so two cases need rescuing:
+		// installs from before the plugin shipped a registration (empty), and
+		// installs pinned to a registration we used to ship. Neither was a choice
+		// the user made, and leaving either alone strands them on a dead app.
+		const saved = this.settings.clientId.trim();
+		if (!saved || SUPERSEDED_CLIENT_IDS.includes(saved)) {
 			this.settings.clientId = BUNDLED_CLIENT_ID;
 		}
 	}

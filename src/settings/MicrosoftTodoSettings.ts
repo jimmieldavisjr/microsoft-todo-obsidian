@@ -45,6 +45,21 @@ export interface MicrosoftTodoSettings {
  */
 export const BUNDLED_CLIENT_ID = "305576c8-1eba-486b-bb1f-351b29a78dde";
 
+/**
+ * Client IDs this plugin has shipped as its default in the past.
+ *
+ * Settings are persisted whole, so the bundled ID gets written into every
+ * user's `data.json` on first save - and a saved value beats a new default.
+ * Without this list, changing the bundled registration would silently strand
+ * every existing install on the old one.
+ *
+ * A saved ID that appears here came from us rather than the user, so it is safe
+ * to move forward. Anything else is somebody's own registration; leave it alone.
+ */
+export const SUPERSEDED_CLIENT_IDS: readonly string[] = [
+	"305576c8-1eba-486b-bb1f-351b29a78dde",
+];
+
 export const DEFAULT_SETTINGS: MicrosoftTodoSettings = {
 	clientId: BUNDLED_CLIENT_ID,
 	tenantId: "common",
