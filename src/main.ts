@@ -316,7 +316,7 @@ export default class MicrosoftTodoPlugin extends Plugin {
 			notes: remainder,
 			file,
 			preferredListId: this.settings.selectedTextListId,
-			selectedText: { editor, value: selection },
+			selectedText: { editor, value: selection, title: title.slice(0, MAX_TITLE_LENGTH) },
 		});
 	}
 
@@ -334,7 +334,7 @@ export default class MicrosoftTodoPlugin extends Plugin {
 		notes: string;
 		file: TFile | null;
 		preferredListId: string;
-		selectedText?: { editor: Editor; value: string };
+		selectedText?: { editor: Editor; value: string; title: string };
 	}): Promise<void> {
 		if (!(await this.ensureReady())) return;
 
@@ -361,20 +361,38 @@ export default class MicrosoftTodoPlugin extends Plugin {
 				this.taskService.getState().lists.find((list) => list.id === listId)?.displayName ?? "Microsoft To Do";
 			showTaskCreatedNotice(`Added "${truncate(input.title, 60)}" to ${listName}.`, task.id);
 			if (this.settings.formatSelectedTextAsLink && options.selectedText) {
-				this.linkSelectedText(options.selectedText.editor, options.selectedText.value, task.id);
+				this.linkSelectedText(
+					options.selectedText.editor,
+					options.selectedText.value,
+					options.selectedText.title,
+					task.id
+				);
 			}
 		} catch (error) {
 			new Notice(describeError(error));
 		}
 	}
 
-	private linkSelectedText(editor: Editor, selectedText: string, taskId: string): void {
+	private linkSelectedText(editor: Editor, selectedText: string, title: string, taskId: string): void {
 		if (editor.getSelection() !== selectedText) {
 			new Notice("Task created, but the selection changed before it could be linked.");
 			return;
 		}
 
-		editor.replaceSelection(createTodoTaskMarkdownLink(selectedText, taskId));
+		const lines = selectedText.split("\n");
+		const firstContentLine = lines.findIndex((line) => line.trim().length > 0);
+		const rawTitleLine = firstContentLine === -1 ? "" : lines[firstContentLine];
+		const titleStart = rawTitleLine.lastIndexOf(title);
+		if (firstContentLine === -1 || titleStart === -1) {
+			new Notice("Task created, but the selected text could not be linked.");
+			return;
+		}
+
+		lines[firstContentLine] =
+			rawTitleLine.slice(0, titleStart) +
+			createTodoTaskMarkdownLink(title, taskId) +
+			rawTitleLine.slice(titleStart + title.length);
+		editor.replaceSelection(lines.join("\n"));
 	}
 
 	/** A pointer back to the note, in whichever style the user configured. */
