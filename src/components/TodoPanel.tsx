@@ -6,6 +6,7 @@ import { TaskList } from "./TaskList";
 import { useTodoContext, useTodoState } from "./PluginContext";
 import { describeError } from "../errors";
 import { startOfToday } from "../util/date";
+import { showTaskCreatedNotice, TODO_WEB_URL } from "../util/task-links";
 import {
 	SMART_LISTS,
 	selectionKey,
@@ -13,8 +14,6 @@ import {
 	type ListSelection,
 	type TodoTaskList,
 } from "../types/microsoft-todo";
-
-const TODO_WEB_URL = "https://to-do.office.com/tasks/";
 
 /**
  * Root of the Microsoft To Do view.
@@ -206,7 +205,8 @@ function Composer(): ReactElement {
 	const onCreate = useCallback(
 		async (input: CreateTaskInput, listId: string) => {
 			try {
-				await service.createTask(listId, input);
+				const task = await service.createTask(listId, input);
+				showTaskCreatedNotice(`Added "${input.title}" to Microsoft To Do.`, task.id);
 			} catch (error) {
 				new Notice(describeError(error));
 				throw error;

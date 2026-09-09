@@ -2,6 +2,7 @@ import { App, Modal, Notice, Setting } from "obsidian";
 import type { TaskService } from "../services/TaskService";
 import { describeError } from "../errors";
 import { parseDateInput } from "../util/date";
+import { showTaskCreatedNotice } from "../util/task-links";
 import type { CreateTaskInput, TodoTaskList } from "../types/microsoft-todo";
 
 /**
@@ -118,10 +119,10 @@ export class AddTaskModal extends Modal {
 		};
 
 		try {
-			await this.service.createTask(this.listId, input);
+			const task = await this.service.createTask(this.listId, input);
 			const listName =
 				this.service.getState().lists.find((list) => list.id === this.listId)?.displayName ?? "Microsoft To Do";
-			new Notice(`Added to ${listName}.`);
+			showTaskCreatedNotice(`Added to ${listName}.`, task.id);
 			this.close();
 		} catch (error) {
 			new Notice(describeError(error));

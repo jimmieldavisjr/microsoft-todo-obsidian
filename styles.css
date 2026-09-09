@@ -807,6 +807,16 @@
 	gap: var(--size-4-2);
 }
 
+.mstd-view .mstd-task-link {
+	color: var(--text-accent);
+	font-size: var(--font-ui-smaller);
+	text-decoration: none;
+}
+
+.mstd-view .mstd-task-link:hover {
+	text-decoration: underline;
+}
+
 .mstd-view .mstd-detail-delete {
 	padding: var(--size-2-1);
 	color: var(--text-faint);

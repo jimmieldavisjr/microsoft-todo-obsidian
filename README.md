@@ -15,7 +15,9 @@ The plugin reads and writes your tasks directly through Microsoft Graph, which i
 - My Day and Important views spanning all lists.
 - Create tasks with a due date, an importance flag and notes.
 - Complete, reopen, rename and delete tasks.
+- Open tasks directly in Microsoft To Do on the web.
 - Create a task from the current note or from selected text, with an optional link back to the note.
+- Optionally replace selected text with a link to the created Microsoft To Do task.
 - Manual refresh, refresh on open, and optional background refresh at a set interval.
 - Interface styled with your Obsidian theme's colours.
 
@@ -70,6 +72,7 @@ The panel opens in the right sidebar. It can be moved to the left sidebar or to 
 | Mark a task important     | Select the star                                                                               |
 | Rename a task             | Double-click the title, or select the pencil                                                  |
 | View task details         | Select the task title                                                                         |
+| Open in Microsoft To Do  | Open a task's details, then select **Open in Microsoft To Do**                               |
 | Set a due date            | Open the task, select **Due date**, then choose Today, Tomorrow, Next week or a specific date |
 | Clear a due date          | Select **Remove due date** in the date menu, or select the cross on the date control          |
 | Edit task notes           | Open the task, edit the notes field, then click outside it to save                            |
@@ -108,6 +111,8 @@ Both commands can add a reference to the source note in the task notes. Two form
 
 The reference can be disabled in the settings. Each command can also be assigned its own target list, or left to use the default list.
 
+The **Format selected text as a task link** setting is disabled by default. When enabled, **Add selected text as task** replaces the unchanged selection with a Markdown link to the newly created Microsoft To Do task. If the selection changes while the task is being created, the plugin leaves the note untouched.
+
 ## Settings
 
 Open **Settings > Community plugins > Microsoft To Do**, or select the settings button in the panel header.
@@ -141,6 +146,7 @@ Changing either the client ID or the tenant clears the stored sign-in, because t
 | Add a link back to the note | Adds a reference to the source note when a task is created from a note or selection. |
 | Link style                  | Selects an `obsidian://` link or a plain vault path.                                 |
 | List for selected text      | The target list for **Add selected text as task**.                                   |
+| Format selected text as a task link | Replaces selected text with a link to the created task. Disabled by default.       |
 | List for the current note   | The target list for **Add current note as task**.                                    |
 
 ## Privacy and data storage

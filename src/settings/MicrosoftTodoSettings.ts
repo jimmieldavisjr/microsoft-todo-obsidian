@@ -28,6 +28,7 @@ export interface MicrosoftTodoSettings {
 	/* Obsidian integration */
 	addNoteLink: boolean;
 	noteLinkStyle: NoteLinkStyle;
+	formatSelectedTextAsLink: boolean;
 	selectedTextListId: string;
 	currentNoteListId: string;
 }
@@ -77,6 +78,7 @@ export const DEFAULT_SETTINGS: MicrosoftTodoSettings = {
 
 	addNoteLink: true,
 	noteLinkStyle: "uri",
+	formatSelectedTextAsLink: false,
 	selectedTextListId: "",
 	currentNoteListId: "",
 };
@@ -349,6 +351,18 @@ export class MicrosoftTodoSettingTab extends PluginSettingTab {
 				await this.plugin.saveSettings();
 			},
 		});
+
+		new Setting(containerEl)
+			.setName("Format selected text as a task link")
+			.setDesc(
+				"When enabled, replace the selection with a Markdown link to the Microsoft To Do task after it is created."
+			)
+			.addToggle((toggle) =>
+				toggle.setValue(this.plugin.settings.formatSelectedTextAsLink).onChange(async (value) => {
+					this.plugin.settings.formatSelectedTextAsLink = value;
+					await this.plugin.saveSettings();
+				})
+			);
 
 		this.addListDropdown(containerEl, {
 			name: "List for the current note",

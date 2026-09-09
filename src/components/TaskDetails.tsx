@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactElement } from "react";
 import { Icon } from "./Icon";
 import { DueDateControl } from "./DueDateControl";
 import { fromGraphDate } from "../util/date";
+import { getTodoTaskUrl } from "../util/task-links";
 import type { TaskWithList, UpdateTaskInput } from "../types/microsoft-todo";
 
 export interface TaskDetailsProps {
@@ -92,9 +93,19 @@ export function TaskDetails({ task, showListName, busy, onUpdate, onDelete, onCl
 					</>
 				) : (
 					<>
-						<button type="button" className="mstd-text-button" onClick={onClose}>
-							Close
-						</button>
+						<span className="mstd-detail-actions">
+							<a
+								className="mstd-task-link"
+								href={getTodoTaskUrl(task.id)}
+								target="_blank"
+								rel="noopener"
+							>
+								Open in Microsoft To Do
+							</a>
+							<button type="button" className="mstd-text-button" onClick={onClose}>
+								Close
+							</button>
+						</span>
 						<button
 							type="button"
 							className="mstd-icon-button mstd-detail-delete"
