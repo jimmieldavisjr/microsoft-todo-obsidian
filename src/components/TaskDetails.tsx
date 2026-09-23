@@ -1,8 +1,10 @@
 import { useEffect, useState, type ReactElement } from "react";
 import { Icon } from "./Icon";
 import { DueDateControl } from "./DueDateControl";
+import { useTodoContext } from "./PluginContext";
 import { fromGraphDate } from "../util/date";
 import { getTodoTaskUrl } from "../util/task-links";
+import { findSourceNotePath, openSourceNote } from "../util/note-reference";
 import type { TaskWithList, UpdateTaskInput } from "../types/microsoft-todo";
 
 export interface TaskDetailsProps {
@@ -23,8 +25,11 @@ export interface TaskDetailsProps {
  * Importance is deliberately absent - the star on the row itself owns that.
  */
 export function TaskDetails({ task, showListName, busy, onUpdate, onDelete, onClose }: TaskDetailsProps): ReactElement {
+	const { app } = useTodoContext();
 	const [notes, setNotes] = useState(task.body?.content ?? "");
 	const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+	const sourceNotePath = findSourceNotePath(task.body?.content);
 
 	// Re-sync when the server copy comes back, or when a different task expands.
 	useEffect(() => {
@@ -94,6 +99,15 @@ export function TaskDetails({ task, showListName, busy, onUpdate, onDelete, onCl
 				) : (
 					<>
 						<span className="mstd-detail-actions">
+							{sourceNotePath && (
+								<button
+									type="button"
+									className="mstd-task-link"
+									onClick={() => void openSourceNote(app, sourceNotePath)}
+								>
+									Open source note
+								</button>
+							)}
 							<a
 								className="mstd-task-link"
 								href={getTodoTaskUrl(task.id)}

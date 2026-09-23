@@ -73,6 +73,7 @@ The panel opens in the right sidebar. It can be moved to the left sidebar or to 
 | Rename a task             | Double-click the title, or select the pencil                                                  |
 | View task details         | Select the task title                                                                         |
 | Open in Microsoft To Do  | Open a task's details, then select **Open in Microsoft To Do**                               |
+| Open the source note      | Open a task's details, then select **Open source note** (shown only for tasks created from a note, with the link back to that note still intact) |
 | Set a due date            | Open the task, select **Due date**, then choose Today, Tomorrow, Next week or a specific date |
 | Clear a due date          | Select **Remove due date** in the date menu, or select the cross on the date control          |
 | Edit task notes           | Open the task, edit the notes field, then click outside it to save                            |

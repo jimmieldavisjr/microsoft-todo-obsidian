@@ -28,6 +28,7 @@ import {
 import { AddTaskModal } from "./views/AddTaskModal";
 import { describeError, toAppError } from "./errors";
 import { createTodoTaskMarkdownLink, showTaskCreatedNotice } from "./util/task-links";
+import { buildNoteReference } from "./util/note-reference";
 import type { CreateTaskInput, ListSelection } from "./types/microsoft-todo";
 
 /** Microsoft Graph rejects titles longer than this. */
@@ -347,7 +348,7 @@ export default class MicrosoftTodoPlugin extends Plugin {
 		const bodyParts: string[] = [];
 		if (options.notes) bodyParts.push(options.notes);
 		if (this.settings.addNoteLink && options.file) {
-			bodyParts.push(this.buildNoteReference(options.file));
+			bodyParts.push(buildNoteReference(this.app.vault.getName(), options.file.path, this.settings.noteLinkStyle));
 		}
 
 		const input: CreateTaskInput = {
@@ -393,16 +394,6 @@ export default class MicrosoftTodoPlugin extends Plugin {
 			createTodoTaskMarkdownLink(title, taskId) +
 			rawTitleLine.slice(titleStart + title.length);
 		editor.replaceSelection(lines.join("\n"));
-	}
-
-	/** A pointer back to the note, in whichever style the user configured. */
-	private buildNoteReference(file: TFile): string {
-		if (this.settings.noteLinkStyle === "path") {
-			return `Obsidian note: ${file.path}`;
-		}
-		const vault = encodeURIComponent(this.app.vault.getName());
-		const path = encodeURIComponent(file.path);
-		return `Obsidian note: obsidian://open?vault=${vault}&file=${path}`;
 	}
 
 	/**
