@@ -27,6 +27,7 @@ import {
 } from "./views/MicrosoftTodoView";
 import { AddTaskModal } from "./views/AddTaskModal";
 import { describeError, toAppError } from "./errors";
+import { createTodoTaskMarkdownLink, showTaskCreatedNotice } from "./util/task-links";
 import type { CreateTaskInput, ListSelection } from "./types/microsoft-todo";
 
 /** Microsoft Graph rejects titles longer than this. */
@@ -233,7 +234,7 @@ export default class MicrosoftTodoPlugin extends Plugin {
 			editorCheckCallback: (checking: boolean, editor: Editor, ctx: MarkdownView | MarkdownFileInfo) => {
 				const selection = editor.getSelection();
 				if (!selection.trim()) return false;
-				if (!checking) void this.addSelectionAsTask(selection, ctx.file ?? null);
+				if (!checking) void this.addSelectionAsTask(selection, editor, ctx.file ?? null);
 				return true;
 			},
 		});
@@ -293,7 +294,7 @@ export default class MicrosoftTodoPlugin extends Plugin {
 	/* Obsidian -> To Do                                                      */
 	/* ---------------------------------------------------------------------- */
 
-	private async addSelectionAsTask(selection: string, file: TFile | null): Promise<void> {
+	private async addSelectionAsTask(selection: string, editor: Editor, file: TFile | null): Promise<void> {
 		const lines = selection.split("\n");
 		const firstContentLine = lines.findIndex((line) => line.trim().length > 0);
 		if (firstContentLine === -1) return;
@@ -315,6 +316,7 @@ export default class MicrosoftTodoPlugin extends Plugin {
 			notes: remainder,
 			file,
 			preferredListId: this.settings.selectedTextListId,
+			selectedText: { editor, value: selection, title: title.slice(0, MAX_TITLE_LENGTH) },
 		});
 	}
 
@@ -332,6 +334,7 @@ export default class MicrosoftTodoPlugin extends Plugin {
 		notes: string;
 		file: TFile | null;
 		preferredListId: string;
+		selectedText?: { editor: Editor; value: string; title: string };
 	}): Promise<void> {
 		if (!(await this.ensureReady())) return;
 
@@ -353,13 +356,43 @@ export default class MicrosoftTodoPlugin extends Plugin {
 		};
 
 		try {
-			await this.taskService.createTask(listId, input);
+			const task = await this.taskService.createTask(listId, input);
 			const listName =
 				this.taskService.getState().lists.find((list) => list.id === listId)?.displayName ?? "Microsoft To Do";
-			new Notice(`Added "${truncate(input.title, 60)}" to ${listName}.`);
+			showTaskCreatedNotice(`Added "${truncate(input.title, 60)}" to ${listName}.`, task.id);
+			if (this.settings.formatSelectedTextAsLink && options.selectedText) {
+				this.linkSelectedText(
+					options.selectedText.editor,
+					options.selectedText.value,
+					options.selectedText.title,
+					task.id
+				);
+			}
 		} catch (error) {
 			new Notice(describeError(error));
 		}
+	}
+
+	private linkSelectedText(editor: Editor, selectedText: string, title: string, taskId: string): void {
+		if (editor.getSelection() !== selectedText) {
+			new Notice("Task created, but the selection changed before it could be linked.");
+			return;
+		}
+
+		const lines = selectedText.split("\n");
+		const firstContentLine = lines.findIndex((line) => line.trim().length > 0);
+		const rawTitleLine = firstContentLine === -1 ? "" : lines[firstContentLine];
+		const titleStart = rawTitleLine.lastIndexOf(title);
+		if (firstContentLine === -1 || titleStart === -1) {
+			new Notice("Task created, but the selected text could not be linked.");
+			return;
+		}
+
+		lines[firstContentLine] =
+			rawTitleLine.slice(0, titleStart) +
+			createTodoTaskMarkdownLink(title, taskId) +
+			rawTitleLine.slice(titleStart + title.length);
+		editor.replaceSelection(lines.join("\n"));
 	}
 
 	/** A pointer back to the note, in whichever style the user configured. */
