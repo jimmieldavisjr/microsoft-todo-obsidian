@@ -1,14 +1,23 @@
 import type { AccountInfo, MicrosoftAuth } from "../auth/MicrosoftAuth";
 import type { TodoApi } from "../graph/TodoApi";
+import type { PlannerApi } from "../graph/PlannerApi";
 import type { MicrosoftTodoSettings } from "../settings/MicrosoftTodoSettings";
 import { AppError, toAppError } from "../errors";
 import { mapLimitSettled } from "../util/async";
-import { fromGraphDate, fromGraphInstant, isDueTodayOrEarlier } from "../util/date";
+import { toGraphDate } from "../util/date";
+import { matchesSmartList, sortTasks } from "../util/task-filters";
 import {
+	SMART_LISTS,
 	selectionKey,
 	selectionsEqual,
+	type ChecklistItem,
 	type CreateTaskInput,
+	type Importance,
+	type LinkedResource,
+	type LinkedResourceInput,
 	type ListSelection,
+	type PlannerTask,
+	type TaskStatus,
 	type TaskWithList,
 	type TodoTask,
 	type TodoTaskList,
@@ -19,7 +28,7 @@ import {
  * The application service: everything the UI needs, with no UI in it.
  *
  * Holds one cache of tasks keyed by list, derives the current view (including
- * the two client-side smart views) from that cache, and exposes an observable
+ * the client-side smart views) from that cache, and exposes an observable
  * snapshot the React tree subscribes to.
  */
 
@@ -28,6 +37,9 @@ const LIST_FETCH_CONCURRENCY = 4;
 
 /** A refresh younger than this is reused instead of refetching. */
 const STALE_AFTER_MS = 60_000;
+
+/** Planner tasks live in their own pseudo-lists so they can't collide with To Do IDs. */
+const PLANNER_LIST_PREFIX = "planner:";
 
 export type LoadStatus = "idle" | "loading" | "refreshing";
 
@@ -39,10 +51,18 @@ export interface TodoState {
 	lists: TodoTaskList[];
 	selection: ListSelection;
 
-	/** Tasks for the current selection, already sorted for display. */
+	/** Tasks for the current selection, open and completed, in default order. */
 	tasks: TaskWithList[];
+	/** Every task the plugin has cached, across all lists - search spans these. */
+	allTasks: TaskWithList[];
 	/** Open-task counts, keyed by `selectionKey` - `list:<id>` or `smart:<id>`. */
 	counts: Record<string, number>;
+
+	/** `null` until the first Planner request settles; `false` for personal accounts. */
+	plannerAvailable: boolean | null;
+	/** True once completed tasks have been fetched for every list. */
+	completedLoaded: boolean;
+	completedLoading: boolean;
 
 	status: LoadStatus;
 	error: AppError | null;
@@ -60,7 +80,7 @@ export interface RefreshOptions {
 
 type Listener = () => void;
 
-const DEFAULT_SELECTION: ListSelection = { kind: "smart", id: "myDay" };
+const DEFAULT_SELECTION: ListSelection = { kind: "smart", id: "all" };
 
 export class TaskService {
 	private state: TodoState;
@@ -70,6 +90,9 @@ export class TaskService {
 	/** listId -> tasks. Holds completed tasks too when they have been fetched. */
 	private readonly cache = new Map<string, TodoTask[]>();
 	private readonly loadedListIds = new Set<string>();
+	/** Lists whose completed tasks are in the cache, so refreshes keep them. */
+	private readonly completedListIds = new Set<string>();
+	private plannerTasks: TaskWithList[] = [];
 
 	private inFlight: Promise<void> | null = null;
 	private disposeAuthListener: (() => void) | null = null;
@@ -77,6 +100,7 @@ export class TaskService {
 	constructor(
 		private readonly auth: MicrosoftAuth,
 		private readonly api: TodoApi,
+		private readonly planner: PlannerApi,
 		private readonly getSettings: () => MicrosoftTodoSettings,
 		private readonly persistSelection: (selection: ListSelection) => void
 	) {
@@ -87,7 +111,11 @@ export class TaskService {
 			lists: [],
 			selection: DEFAULT_SELECTION,
 			tasks: [],
+			allTasks: [],
 			counts: {},
+			plannerAvailable: null,
+			completedLoaded: false,
+			completedLoading: false,
 			status: "idle",
 			error: null,
 			busyTaskIds: [],
@@ -108,7 +136,17 @@ export class TaskService {
 				signedIn,
 				configured: this.auth.isConfigured,
 				account: this.auth.account,
-				...(signedIn ? {} : { lists: [], tasks: [], counts: {}, lastSyncAt: null }),
+				...(signedIn
+					? {}
+					: {
+							lists: [],
+							tasks: [],
+							allTasks: [],
+							counts: {},
+							lastSyncAt: null,
+							plannerAvailable: null,
+							completedLoaded: false,
+						}),
 			});
 		});
 
@@ -156,9 +194,13 @@ export class TaskService {
 	 */
 	private recompute(extra: Partial<TodoState> = {}): void {
 		const selection = extra.selection ?? this.state.selection;
+		const lists = extra.lists ?? this.state.lists;
+		const allTasks = this.deriveAllTasks(lists);
 		this.patch({
-			tasks: this.deriveTasks(selection),
-			counts: this.deriveCounts(),
+			allTasks,
+			tasks: deriveSelection(allTasks, lists, selection),
+			counts: deriveCounts(allTasks, lists),
+			completedLoaded: lists.length > 0 && lists.every((list) => this.completedListIds.has(list.id)),
 			...extra,
 		});
 	}
@@ -170,6 +212,8 @@ export class TaskService {
 	private resolveInitialSelection(): ListSelection {
 		const settings = this.getSettings();
 		switch (settings.defaultView) {
+			case "all":
+				return { kind: "smart", id: "all" };
 			case "myDay":
 				return { kind: "smart", id: "myDay" };
 			case "important":
@@ -177,10 +221,17 @@ export class TaskService {
 			case "defaultList":
 				return settings.defaultListId
 					? { kind: "list", id: settings.defaultListId }
-					: { kind: "smart", id: "myDay" };
+					: DEFAULT_SELECTION;
 			case "last":
-			default:
-				return settings.lastSelection ?? DEFAULT_SELECTION;
+			default: {
+				const last = settings.lastSelection;
+				// A selection saved by an older version may name a smart list
+				// that no longer exists.
+				if (last?.kind === "smart" && !SMART_LISTS.some((smart) => smart.id === last.id)) {
+					return DEFAULT_SELECTION;
+				}
+				return last ?? DEFAULT_SELECTION;
+			}
 		}
 	}
 
@@ -194,11 +245,11 @@ export class TaskService {
 		const needsFetch =
 			this.state.lists.length === 0 ||
 			(selection.kind === "smart"
-				? this.lists().some((list) => !this.loadedListIds.has(list.id))
+				? this.state.lists.some((list) => !this.loadedListIds.has(list.id))
 				: !this.loadedListIds.has(selection.id));
 
 		if (needsFetch && this.auth.isSignedIn) {
-			await this.refresh({ force: true, background: this.state.tasks.length > 0 });
+			await this.refresh({ force: true, background: this.state.allTasks.length > 0 });
 		}
 	}
 
@@ -225,7 +276,7 @@ export class TaskService {
 			Date.now() - this.state.lastSyncAt < STALE_AFTER_MS;
 		if (fresh) return;
 
-		const showSpinner = !options.background && this.state.tasks.length === 0;
+		const showSpinner = !options.background && this.state.allTasks.length === 0;
 		this.patch({ status: showSpinner ? "loading" : "refreshing", error: null });
 
 		this.inFlight = this.runRefresh().finally(() => {
@@ -236,6 +287,8 @@ export class TaskService {
 
 	private async runRefresh(): Promise<void> {
 		try {
+			// Planner runs alongside To Do; it never fails the refresh.
+			const plannerDone = this.refreshPlanner();
 			const lists = await this.api.getLists();
 
 			// Forget cache for lists that no longer exist.
@@ -244,17 +297,19 @@ export class TaskService {
 				if (!liveIds.has(id)) {
 					this.cache.delete(id);
 					this.loadedListIds.delete(id);
+					this.completedListIds.delete(id);
 				}
 			}
 
-			this.patch({ lists });
+			this.recompute({ lists });
 
 			const targets = this.listsToFetch(lists);
-			const includeCompleted = this.getSettings().showCompleted;
+			const showCompleted = this.getSettings().showCompleted;
 
 			const results = await mapLimitSettled(targets, LIST_FETCH_CONCURRENCY, async (list) => {
-				const tasks = await this.api.getTasks(list.id, { includeCompleted });
-				return { listId: list.id, tasks };
+				const withCompleted = showCompleted || this.completedListIds.has(list.id);
+				const tasks = await this.api.getTasks(list.id, { completed: withCompleted ? "include" : "exclude" });
+				return { listId: list.id, tasks, withCompleted };
 			});
 
 			const failures: unknown[] = [];
@@ -262,6 +317,7 @@ export class TaskService {
 				if (result.ok) {
 					this.cache.set(result.value.listId, result.value.tasks);
 					this.loadedListIds.add(result.value.listId);
+					if (result.value.withCompleted) this.completedListIds.add(result.value.listId);
 				} else {
 					failures.push(result.error);
 				}
@@ -272,6 +328,8 @@ export class TaskService {
 				throw toAppError(failures[0]);
 			}
 
+			await plannerDone;
+
 			this.recompute({
 				status: "idle",
 				error: failures.length > 0 ? toAppError(failures[0]) : null,
@@ -281,6 +339,27 @@ export class TaskService {
 			const appError = toAppError(error);
 			this.recompute({ status: "idle", error: appError });
 			if (appError.requiresSignIn) this.clearCache();
+		}
+	}
+
+	/**
+	 * Fetches "Assigned to me". A personal account has no Planner and answers
+	 * with an error; that switches the view off rather than reporting a failure.
+	 * A transient failure keeps whatever was there before.
+	 */
+	private async refreshPlanner(): Promise<void> {
+		if (this.state.plannerAvailable === false) return;
+
+		try {
+			const tasks = await this.planner.getMyTasks();
+			const titles = await this.planner.getPlanTitles(tasks.map((task) => task.planId));
+			this.plannerTasks = tasks.map((task) => fromPlannerTask(task, titles.get(task.planId) ?? "Planner"));
+			this.patch({ plannerAvailable: true });
+		} catch (error) {
+			const appError = toAppError(error);
+			if (appError.requiresSignIn || appError.retryable || appError.kind === "network") return;
+			this.plannerTasks = [];
+			this.patch({ plannerAvailable: false });
 		}
 	}
 
@@ -298,6 +377,42 @@ export class TaskService {
 		return selected ? [selected] : lists.slice(0, 1);
 	}
 
+	/**
+	 * Fetches completed tasks for every list that doesn't have them yet - done
+	 * lazily, the first time someone opens the Completed tab, because a
+	 * long-lived list can hold thousands.
+	 */
+	async loadCompleted(): Promise<void> {
+		if (!this.auth.isSignedIn || this.state.completedLoading) return;
+
+		const targets = this.state.lists.filter((list) => !this.completedListIds.has(list.id));
+		if (targets.length === 0) return;
+
+		this.patch({ completedLoading: true });
+
+		const results = await mapLimitSettled(targets, LIST_FETCH_CONCURRENCY, async (list) => ({
+			listId: list.id,
+			tasks: await this.api.getTasks(list.id, { completed: "only" }),
+		}));
+
+		let firstError: unknown = null;
+		for (const result of results) {
+			if (!result.ok) {
+				firstError ??= result.error;
+				continue;
+			}
+			const { listId, tasks } = result.value;
+			const open = (this.cache.get(listId) ?? []).filter((task) => task.status !== "completed");
+			this.cache.set(listId, [...open, ...tasks]);
+			this.completedListIds.add(listId);
+		}
+
+		this.recompute({
+			completedLoading: false,
+			error: firstError ? toAppError(firstError) : this.state.error,
+		});
+	}
+
 	async setShowCompleted(_value: boolean): Promise<void> {
 		// The cache no longer matches what we'd fetch, so pull everything again.
 		await this.refresh({ force: true, background: true });
@@ -310,66 +425,90 @@ export class TaskService {
 	private clearCache(): void {
 		this.cache.clear();
 		this.loadedListIds.clear();
+		this.completedListIds.clear();
+		this.plannerTasks = [];
 	}
 
 	/* ---------------------------------------------------------------------- */
 	/* Derivation                                                             */
 	/* ---------------------------------------------------------------------- */
 
-	private lists(): TodoTaskList[] {
-		return this.state.lists;
-	}
-
-	private withList(task: TodoTask, list: TodoTaskList): TaskWithList {
-		return { ...task, listId: list.id, listName: list.displayName };
-	}
-
-	private deriveTasks(selection: ListSelection): TaskWithList[] {
-		const lists = this.lists();
-
-		if (selection.kind === "list") {
-			const list = lists.find((candidate) => candidate.id === selection.id);
-			if (!list) return [];
-			const tasks = this.cache.get(list.id) ?? [];
-			return tasks.map((task) => this.withList(task, list)).sort(compareTasks);
-		}
-
-		const matches: TaskWithList[] = [];
+	private deriveAllTasks(lists: TodoTaskList[]): TaskWithList[] {
+		const all: TaskWithList[] = [];
 		for (const list of lists) {
 			for (const task of this.cache.get(list.id) ?? []) {
-				if (matchesSmartList(task, selection.id)) matches.push(this.withList(task, list));
+				all.push({ ...task, listId: list.id, listName: list.displayName, source: "todo" });
 			}
 		}
-		return matches.sort(compareTasks);
+		all.push(...this.plannerTasks);
+		return all;
 	}
 
-	private deriveCounts(): Record<string, number> {
-		const counts: Record<string, number> = {};
-		let myDay = 0;
-		let important = 0;
-
-		for (const list of this.lists()) {
-			const tasks = this.cache.get(list.id);
-			// Lists we haven't fetched stay absent rather than reporting a false zero.
-			if (!tasks) continue;
-
-			let open = 0;
-			for (const task of tasks) {
-				if (task.status === "completed") continue;
-				open++;
-				if (matchesSmartList(task, "myDay")) myDay++;
-				if (matchesSmartList(task, "important")) important++;
-			}
-			counts[selectionKey({ kind: "list", id: list.id })] = open;
-		}
-
-		counts[selectionKey({ kind: "smart", id: "myDay" })] = myDay;
-		counts[selectionKey({ kind: "smart", id: "important" })] = important;
-		return counts;
+	/** Finds the freshest copy of a task, e.g. to keep a detail pane current. */
+	findTask(taskId: string): TaskWithList | undefined {
+		return this.state.allTasks.find((task) => task.id === taskId);
 	}
 
 	/* ---------------------------------------------------------------------- */
-	/* Mutations                                                              */
+	/* List mutations                                                         */
+	/* ---------------------------------------------------------------------- */
+
+	async createList(displayName: string): Promise<TodoTaskList> {
+		const name = displayName.trim();
+		const list = await this.api.createList(name);
+		this.cache.set(list.id, []);
+		this.loadedListIds.add(list.id);
+		this.completedListIds.add(list.id);
+		this.recompute({ lists: [...this.state.lists, list] });
+		return list;
+	}
+
+	async renameList(listId: string, displayName: string): Promise<void> {
+		const name = displayName.trim();
+		const previous = this.state.lists;
+		const current = previous.find((list) => list.id === listId);
+		if (!current || !name || current.displayName === name) return;
+
+		this.recompute({ lists: previous.map((list) => (list.id === listId ? { ...list, displayName: name } : list)) });
+
+		try {
+			const updated = await this.api.renameList(listId, name);
+			this.recompute({
+				lists: this.state.lists.map((list) => (list.id === listId ? { ...list, ...updated } : list)),
+			});
+		} catch (error) {
+			this.recompute({ lists: previous });
+			throw toAppError(error);
+		}
+	}
+
+	async deleteList(listId: string): Promise<void> {
+		const previousLists = this.state.lists;
+		const previousTasks = this.cache.get(listId);
+
+		const lists = previousLists.filter((list) => list.id !== listId);
+		this.cache.delete(listId);
+		const selection = this.state.selection;
+		const nextSelection = selection.kind === "list" && selection.id === listId ? DEFAULT_SELECTION : selection;
+		if (nextSelection !== selection) this.persistSelection(nextSelection);
+		this.recompute({ lists, selection: nextSelection });
+
+		try {
+			await this.api.deleteList(listId);
+			this.loadedListIds.delete(listId);
+			this.completedListIds.delete(listId);
+		} catch (error) {
+			const appError = toAppError(error);
+			if (appError.kind !== "not-found") {
+				if (previousTasks) this.cache.set(listId, previousTasks);
+				this.recompute({ lists: previousLists });
+			}
+			throw appError;
+		}
+	}
+
+	/* ---------------------------------------------------------------------- */
+	/* Task mutations                                                         */
 	/* ---------------------------------------------------------------------- */
 
 	/**
@@ -378,7 +517,7 @@ export class TaskService {
 	 * default list, else the first list there is.
 	 */
 	resolveTargetListId(preferred?: string): string | null {
-		const lists = this.lists();
+		const lists = this.state.lists;
 		const exists = (id: string | undefined | null): id is string =>
 			!!id && lists.some((list) => list.id === id);
 
@@ -412,7 +551,7 @@ export class TaskService {
 	}
 
 	async updateTask(task: TaskWithList, input: UpdateTaskInput): Promise<void> {
-		await this.mutate(task, applyLocally(task, input), () =>
+		await this.mutate(task, (current) => applyLocally(current, input), () =>
 			this.api.updateTask(task.listId, task.id, input)
 		);
 	}
@@ -423,15 +562,29 @@ export class TaskService {
 		await this.updateTask(task, { title: trimmed });
 	}
 
+	async setImportance(task: TaskWithList, importance: Importance): Promise<void> {
+		if (task.importance === importance) return;
+		await this.updateTask(task, { importance });
+	}
+
+	async setCategories(task: TaskWithList, categories: string[]): Promise<void> {
+		const unique = [...new Set(categories.map((category) => category.trim()).filter(Boolean))];
+		await this.updateTask(task, { categories: unique });
+	}
+
 	async setCompleted(task: TaskWithList, completed: boolean): Promise<void> {
-		const optimistic: TodoTask = {
-			...task,
-			status: completed ? "completed" : "notStarted",
-			completedDateTime: completed
-				? { dateTime: new Date().toISOString().replace("Z", "0000000"), timeZone: "UTC" }
-				: null,
-		};
-		await this.mutate(task, optimistic, () => this.api.setCompleted(task.listId, task.id, completed));
+		const status: TaskStatus = completed ? "completed" : "notStarted";
+		await this.mutate(
+			task,
+			(current) => ({
+				...current,
+				status,
+				completedDateTime: completed
+					? { dateTime: new Date().toISOString().replace("Z", "0000"), timeZone: "UTC" }
+					: null,
+			}),
+			() => this.api.setCompleted(task.listId, task.id, completed)
+		);
 	}
 
 	async deleteTask(task: TaskWithList): Promise<void> {
@@ -458,37 +611,184 @@ export class TaskService {
 	}
 
 	/**
+	 * Moves a task to another list. Graph has no move, so this is a copy and a
+	 * delete, and the task comes back with a new ID - which is returned so the
+	 * caller can keep it selected.
+	 */
+	async moveTask(task: TaskWithList, toListId: string): Promise<TodoTask> {
+		if (task.listId === toListId) return task;
+
+		const withExtras = await this.ensureExtras(task);
+		this.setBusy(task.id, true);
+		this.recompute();
+
+		try {
+			const moved = await this.api.moveTask(withExtras, task.listId, toListId);
+			this.cache.set(
+				task.listId,
+				(this.cache.get(task.listId) ?? []).filter((candidate) => candidate.id !== task.id)
+			);
+			this.cache.set(toListId, [moved, ...(this.cache.get(toListId) ?? [])]);
+			this.setBusy(task.id, false);
+			this.recompute();
+			return moved;
+		} catch (error) {
+			this.setBusy(task.id, false);
+			// A failure after the copy leaves a duplicate; a refresh shows the truth.
+			void this.refresh({ force: true, background: true });
+			throw toAppError(error);
+		}
+	}
+
+	/* ---------------------------------------------------------------------- */
+	/* Subtasks and linked resources                                          */
+	/* ---------------------------------------------------------------------- */
+
+	/**
+	 * Tasks normally arrive with their subtasks and links expanded inline. When
+	 * Graph refused the `$expand`, fetch them for this one task on demand.
+	 */
+	async loadExtras(task: TaskWithList): Promise<void> {
+		if (task.source !== "todo") return;
+		if (task.checklistItems !== undefined && task.linkedResources !== undefined) return;
+
+		const [checklistItems, linkedResources] = await Promise.all([
+			task.checklistItems ?? this.api.getChecklistItems(task.listId, task.id),
+			task.linkedResources ?? this.api.getLinkedResources(task.listId, task.id),
+		]);
+		this.replaceCached(task, (current) => ({ ...current, checklistItems, linkedResources }));
+		this.recompute();
+	}
+
+	private async ensureExtras(task: TaskWithList): Promise<TaskWithList> {
+		await this.loadExtras(task);
+		return this.findTask(task.id) ?? task;
+	}
+
+	async addChecklistItem(task: TaskWithList, displayName: string): Promise<void> {
+		const name = displayName.trim();
+		if (!name) return;
+
+		const created = await this.api.createChecklistItem(task.listId, task.id, name);
+		this.replaceCached(task, (current) => ({
+			...current,
+			checklistItems: [...(current.checklistItems ?? []), created],
+		}));
+		this.recompute();
+	}
+
+	async updateChecklistItem(
+		task: TaskWithList,
+		itemId: string,
+		changes: { displayName?: string; isChecked?: boolean }
+	): Promise<void> {
+		const apply = (items: ChecklistItem[] | undefined): ChecklistItem[] =>
+			(items ?? []).map((item) => (item.id === itemId ? { ...item, ...changes } : item));
+
+		const previous = this.findTask(task.id)?.checklistItems;
+		this.replaceCached(task, (current) => ({ ...current, checklistItems: apply(current.checklistItems) }));
+		this.recompute();
+
+		try {
+			await this.api.updateChecklistItem(task.listId, task.id, itemId, changes);
+		} catch (error) {
+			this.replaceCached(task, (current) => ({ ...current, checklistItems: previous }));
+			this.recompute();
+			throw toAppError(error);
+		}
+	}
+
+	async deleteChecklistItem(task: TaskWithList, itemId: string): Promise<void> {
+		const previous = this.findTask(task.id)?.checklistItems;
+		this.replaceCached(task, (current) => ({
+			...current,
+			checklistItems: (current.checklistItems ?? []).filter((item) => item.id !== itemId),
+		}));
+		this.recompute();
+
+		try {
+			await this.api.deleteChecklistItem(task.listId, task.id, itemId);
+		} catch (error) {
+			const appError = toAppError(error);
+			if (appError.kind !== "not-found") {
+				this.replaceCached(task, (current) => ({ ...current, checklistItems: previous }));
+				this.recompute();
+			}
+			throw appError;
+		}
+	}
+
+	async addLinkedResource(task: TaskWithList, input: LinkedResourceInput): Promise<LinkedResource> {
+		const created = await this.api.createLinkedResource(task.listId, task.id, input);
+		this.replaceCached(task, (current) => ({
+			...current,
+			linkedResources: [...(current.linkedResources ?? []), created],
+		}));
+		this.recompute();
+		return created;
+	}
+
+	async deleteLinkedResource(task: TaskWithList, resourceId: string): Promise<void> {
+		const previous = this.findTask(task.id)?.linkedResources;
+		this.replaceCached(task, (current) => ({
+			...current,
+			linkedResources: (current.linkedResources ?? []).filter((resource) => resource.id !== resourceId),
+		}));
+		this.recompute();
+
+		try {
+			await this.api.deleteLinkedResource(task.listId, task.id, resourceId);
+		} catch (error) {
+			const appError = toAppError(error);
+			if (appError.kind !== "not-found") {
+				this.replaceCached(task, (current) => ({ ...current, linkedResources: previous }));
+				this.recompute();
+			}
+			throw appError;
+		}
+	}
+
+	/* ---------------------------------------------------------------------- */
+	/* Cache plumbing                                                         */
+	/* ---------------------------------------------------------------------- */
+
+	private replaceCached(task: TaskWithList, update: (current: TodoTask) => TodoTask): void {
+		const tasks = this.cache.get(task.listId);
+		if (!tasks) return;
+		const index = tasks.findIndex((candidate) => candidate.id === task.id);
+		if (index === -1) return;
+		const next = [...tasks];
+		next[index] = update(tasks[index]);
+		this.cache.set(task.listId, next);
+	}
+
+	/**
 	 * Applies `optimistic` to the cache immediately, runs `request`, then swaps in
 	 * the authoritative server copy. Rolls the cache back if the request fails.
+	 *
+	 * A PATCH response never carries expanded subtasks or links, so those are
+	 * carried over from the cached copy rather than wiped.
 	 */
 	private async mutate(
 		task: TaskWithList,
-		optimistic: TodoTask,
+		optimistic: (current: TodoTask) => TodoTask,
 		request: () => Promise<TodoTask>
 	): Promise<void> {
+		if (task.source !== "todo") return;
 		const previous = this.cache.get(task.listId);
-		if (!previous) return;
+		if (!previous || !previous.some((candidate) => candidate.id === task.id)) return;
 
-		const index = previous.findIndex((candidate) => candidate.id === task.id);
-		if (index === -1) return;
-
-		const next = [...previous];
-		next[index] = optimistic;
-		this.cache.set(task.listId, next);
+		this.replaceCached(task, optimistic);
 		this.setBusy(task.id, true);
 		this.recompute();
 
 		try {
 			const updated = await request();
-			const current = this.cache.get(task.listId);
-			if (current) {
-				const position = current.findIndex((candidate) => candidate.id === task.id);
-				if (position !== -1) {
-					const merged = [...current];
-					merged[position] = updated;
-					this.cache.set(task.listId, merged);
-				}
-			}
+			this.replaceCached(task, (current) => ({
+				...updated,
+				checklistItems: updated.checklistItems ?? current.checklistItems,
+				linkedResources: updated.linkedResources ?? current.linkedResources,
+			}));
 			this.setBusy(task.id, false);
 			this.recompute({ error: null });
 		} catch (error) {
@@ -518,43 +818,96 @@ export class TaskService {
 /* Pure helpers                                                               */
 /* -------------------------------------------------------------------------- */
 
-/**
- * My Day is derived rather than fetched: Microsoft Graph does not expose To Do's
- * My Day list, so "due today or overdue" is the closest faithful equivalent.
- */
-function matchesSmartList(task: TodoTask, smartId: "myDay" | "important"): boolean {
-	if (task.status === "completed") return false;
-
-	if (smartId === "important") return task.importance === "high";
-
-	const due = fromGraphDate(task.dueDateTime);
-	return due !== null && isDueTodayOrEarlier(due);
+function isPlannerListId(listId: string): boolean {
+	return listId.startsWith(PLANNER_LIST_PREFIX);
 }
 
-/** Open tasks first, then by due date, importance, and finally creation order. */
-function compareTasks(a: TaskWithList, b: TaskWithList): number {
-	const aDone = a.status === "completed";
-	const bDone = b.status === "completed";
-	if (aDone !== bDone) return aDone ? 1 : -1;
-
-	if (aDone) {
-		// Most recently completed at the top of the completed group.
-		const aAt = fromGraphInstant(a.completedDateTime)?.getTime() ?? 0;
-		const bAt = fromGraphInstant(b.completedDateTime)?.getTime() ?? 0;
-		return bAt - aAt;
+/** Tasks in a selection, open and completed, in the default due-date order. */
+function deriveSelection(
+	allTasks: TaskWithList[],
+	lists: TodoTaskList[],
+	selection: ListSelection
+): TaskWithList[] {
+	if (selection.kind === "list") {
+		return sortTasks(
+			allTasks.filter((task) => task.listId === selection.id),
+			"dueDate",
+			"asc"
+		);
 	}
 
-	const aDue = fromGraphDate(a.dueDateTime)?.getTime();
-	const bDue = fromGraphDate(b.dueDateTime)?.getTime();
-	if (aDue !== undefined && bDue !== undefined && aDue !== bDue) return aDue - bDue;
-	if (aDue !== undefined && bDue === undefined) return -1;
-	if (aDue === undefined && bDue !== undefined) return 1;
+	if (selection.id === "assigned") {
+		return sortTasks(
+			allTasks.filter((task) => task.source === "planner"),
+			"dueDate",
+			"asc"
+		);
+	}
 
-	const aImportant = a.importance === "high" ? 0 : 1;
-	const bImportant = b.importance === "high" ? 0 : 1;
-	if (aImportant !== bImportant) return aImportant - bImportant;
+	const listsById = new Map(lists.map((list) => [list.id, list]));
+	return sortTasks(
+		allTasks.filter(
+			(task) => task.source === "todo" && matchesSmartList(task, listsById.get(task.listId), selection.id)
+		),
+		"dueDate",
+		"asc"
+	);
+}
 
-	return Date.parse(a.createdDateTime) - Date.parse(b.createdDateTime);
+function deriveCounts(allTasks: TaskWithList[], lists: TodoTaskList[]): Record<string, number> {
+	const counts: Record<string, number> = {};
+	const listsById = new Map(lists.map((list) => [list.id, list]));
+
+	for (const smart of SMART_LISTS) counts[selectionKey({ kind: "smart", id: smart.id })] = 0;
+
+	for (const task of allTasks) {
+		if (task.status === "completed") continue;
+
+		if (task.source === "planner" || isPlannerListId(task.listId)) {
+			counts["smart:assigned"]++;
+			continue;
+		}
+
+		const listKey = selectionKey({ kind: "list", id: task.listId });
+		counts[listKey] = (counts[listKey] ?? 0) + 1;
+
+		const list = listsById.get(task.listId);
+		for (const smart of SMART_LISTS) {
+			if (matchesSmartList(task, list, smart.id)) counts[selectionKey({ kind: "smart", id: smart.id })]++;
+		}
+	}
+
+	return counts;
+}
+
+/**
+ * Presents a Planner task in To Do's shape. Planner priority runs 0-10 with
+ * 1 = urgent and 3 = important; anything at or above "important" reads as
+ * To Do's high importance.
+ */
+function fromPlannerTask(task: PlannerTask, planTitle: string): TaskWithList {
+	const due = task.dueDateTime ? new Date(task.dueDateTime) : null;
+	const priority = task.priority ?? 5;
+	const importance: Importance = priority <= 3 ? "high" : priority >= 9 ? "low" : "normal";
+
+	return {
+		id: task.id,
+		title: task.title,
+		status: task.percentComplete >= 100 ? "completed" : task.percentComplete > 0 ? "inProgress" : "notStarted",
+		importance,
+		isReminderOn: false,
+		createdDateTime: task.createdDateTime,
+		lastModifiedDateTime: task.createdDateTime,
+		dueDateTime: due && !Number.isNaN(due.getTime()) ? toGraphDate(due) : null,
+		completedDateTime: task.completedDateTime
+			? { dateTime: task.completedDateTime.replace(/Z$/, ""), timeZone: "UTC" }
+			: null,
+		checklistItems: [],
+		linkedResources: [],
+		listId: `${PLANNER_LIST_PREFIX}${task.planId}`,
+		listName: planTitle,
+		source: "planner",
+	};
 }
 
 /** Mirrors an update onto a cached task so the UI can show it before the round trip. */
@@ -564,22 +917,11 @@ function applyLocally(task: TodoTask, input: UpdateTaskInput): TodoTask {
 	if (input.title !== undefined) next.title = input.title;
 	if (input.status !== undefined) next.status = input.status;
 	if (input.importance !== undefined) next.importance = input.importance;
+	if (input.categories !== undefined) next.categories = input.categories;
 	if (input.body !== undefined) next.body = { content: input.body, contentType: "text" };
 	if (input.dueDate !== undefined) {
-		next.dueDateTime =
-			input.dueDate === null
-				? null
-				: {
-						dateTime: `${input.dueDate.getFullYear()}-${pad(input.dueDate.getMonth() + 1)}-${pad(
-							input.dueDate.getDate()
-						)}T00:00:00.0000000`,
-						timeZone: "UTC",
-					};
+		next.dueDateTime = input.dueDate === null ? null : toGraphDate(input.dueDate);
 	}
 
 	return next;
-}
-
-function pad(value: number): string {
-	return String(value).padStart(2, "0");
 }

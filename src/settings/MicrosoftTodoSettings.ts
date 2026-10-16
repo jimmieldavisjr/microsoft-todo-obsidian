@@ -3,9 +3,13 @@ import type MicrosoftTodoPlugin from "../main";
 import type { ListSelection } from "../types/microsoft-todo";
 import type { StoredAuthSession } from "../auth/MicrosoftAuth";
 import { describeError } from "../errors";
+import type { ListAppearance } from "../util/appearance";
+import type { SortDirection, SortField } from "../util/task-filters";
 
-export type DefaultView = "last" | "myDay" | "important" | "defaultList";
+export type DefaultView = "last" | "all" | "myDay" | "important" | "defaultList";
 export type NoteLinkStyle = "uri" | "path";
+export type OpenLocation = "tab" | "sidebar";
+export type Density = "comfortable" | "compact";
 
 export interface MicrosoftTodoSettings {
 	/* Azure app registration */
@@ -24,6 +28,15 @@ export interface MicrosoftTodoSettings {
 	autoRefreshMinutes: number;
 	showCompleted: boolean;
 	showListCounts: boolean;
+
+	/* Appearance */
+	/** Where the ribbon icon and the plain Open command go. Both can be open at once. */
+	openLocation: OpenLocation;
+	density: Density;
+	sortField: SortField;
+	sortDirection: SortDirection;
+	/** Colour and icon per list ID - Graph has nowhere to store either. */
+	listAppearance: Record<string, ListAppearance>;
 
 	/* Obsidian integration */
 	addNoteLink: boolean;
@@ -76,6 +89,12 @@ export const DEFAULT_SETTINGS: MicrosoftTodoSettings = {
 	showCompleted: false,
 	showListCounts: true,
 
+	openLocation: "tab",
+	density: "comfortable",
+	sortField: "dueDate",
+	sortDirection: "asc",
+	listAppearance: {},
+
 	addNoteLink: true,
 	noteLinkStyle: "uri",
 	formatSelectedTextAsLink: false,
@@ -96,6 +115,7 @@ export class MicrosoftTodoSettingTab extends PluginSettingTab {
 
 		this.renderAccountSection(containerEl);
 		this.renderBehaviourSection(containerEl);
+		this.renderAppearanceSection(containerEl);
 		this.renderIntegrationSection(containerEl);
 	}
 
@@ -216,7 +236,8 @@ export class MicrosoftTodoSettingTab extends PluginSettingTab {
 				dropdown
 					.addOptions({
 						last: "Last used",
-						myDay: "My Day",
+						all: "My Tasks",
+						myDay: "Today",
 						important: "Important",
 						defaultList: "Default list (below)",
 					})
@@ -240,7 +261,7 @@ export class MicrosoftTodoSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Open Microsoft To Do on startup")
-			.setDesc("Reveal the panel in the sidebar when Obsidian loads. Combine with a default view of My Day to open straight into My Day.")
+			.setDesc("Reveal Microsoft To Do when Obsidian loads. Combine with a default view of Today to open straight into today's tasks.")
 			.addToggle((toggle) =>
 				toggle.setValue(this.plugin.settings.openOnStartup).onChange(async (value) => {
 					this.plugin.settings.openOnStartup = value;
@@ -294,7 +315,7 @@ export class MicrosoftTodoSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("Show task counts in the list sidebar")
 			.setDesc(
-				"Loads every list on refresh so counts, My Day and Important stay accurate. Turn this off if you have a large number of lists and want fewer requests."
+				"Loads every list on refresh so counts, Today and Important stay accurate. Turn this off if you have a large number of lists and want fewer requests."
 			)
 			.addToggle((toggle) =>
 				toggle.setValue(this.plugin.settings.showListCounts).onChange(async (value) => {
@@ -302,6 +323,41 @@ export class MicrosoftTodoSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 					this.plugin.taskService.notifySettingsChanged();
 				})
+			);
+	}
+
+	/* ---------------------------------------------------------------------- */
+
+	private renderAppearanceSection(containerEl: HTMLElement): void {
+		new Setting(containerEl).setName("Appearance").setHeading();
+
+		new Setting(containerEl)
+			.setName("Default location")
+			.setDesc(
+				"Where the ribbon icon and the Open command show Microsoft To Do. The main window has room for lists, tasks and details side by side; the side panel fits the same view into a narrow column. Use the Open in main window and Open in side panel commands to have both open at once."
+			)
+			.addDropdown((dropdown) =>
+				dropdown
+					.addOptions({ tab: "Main window", sidebar: "Right side panel" })
+					.setValue(this.plugin.settings.openLocation)
+					.onChange(async (value) => {
+						this.plugin.settings.openLocation = value as OpenLocation;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName("Task density")
+			.setDesc("Comfortable shows tasks as spaced cards; compact fits more on screen.")
+			.addDropdown((dropdown) =>
+				dropdown
+					.addOptions({ comfortable: "Comfortable", compact: "Compact" })
+					.setValue(this.plugin.settings.density)
+					.onChange(async (value) => {
+						this.plugin.settings.density = value as Density;
+						await this.plugin.saveSettings();
+						this.plugin.notifyAppearanceChanged();
+					})
 			);
 	}
 

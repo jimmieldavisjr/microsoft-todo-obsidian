@@ -3,6 +3,7 @@ import { Icon } from "./Icon";
 import {
 	addDays,
 	formatDueDate,
+	isOverdue,
 	nextMonday,
 	parseDateInput,
 	startOfToday,
@@ -15,6 +16,11 @@ export interface DueDateControlProps {
 	disabled?: boolean;
 	/** Rendered when no date is set. */
 	placeholder?: string;
+	/**
+	 * `chip` is the bordered pill used in the composer; `inline` reads as a
+	 * link-like "Due today ⌄" for the detail pane's property rows.
+	 */
+	variant?: "chip" | "inline";
 }
 
 /**
@@ -29,6 +35,7 @@ export function DueDateControl({
 	onChange,
 	disabled,
 	placeholder = "Due date",
+	variant = "chip",
 }: DueDateControlProps): ReactElement {
 	const [open, setOpen] = useState(false);
 	const [picking, setPicking] = useState(false);
@@ -86,21 +93,36 @@ export function DueDateControl({
 	}
 
 	return (
-		<div className="mstd-due-control" ref={rootRef}>
-			<button
-				type="button"
-				className={`mstd-chip-button${value ? " is-active" : ""}`}
-				disabled={disabled}
-				aria-haspopup="menu"
-				aria-expanded={open}
-				onClick={() => (open ? close() : setOpen(true))}
-				title={value ? `Due ${formatDueDate(value)}` : "Set a due date"}
-			>
-				<Icon name="calendar" />
-				<span>{value ? formatDueDate(value) : placeholder}</span>
-			</button>
+		<div className={`mstd-due-control mstd-due-control--${variant}`} ref={rootRef}>
+			{variant === "inline" ? (
+				<button
+					type="button"
+					className={`mstd-inline-select${value ? " is-active" : ""}${value && isOverdue(value) ? " is-overdue" : ""}`}
+					disabled={disabled}
+					aria-haspopup="menu"
+					aria-expanded={open}
+					onClick={() => (open ? close() : setOpen(true))}
+					title={value ? `Due ${formatDueDate(value)}` : "Set a due date"}
+				>
+					<span>{value ? `Due ${dueLabel(value)}` : placeholder}</span>
+					<Icon name="chevron-down" />
+				</button>
+			) : (
+				<button
+					type="button"
+					className={`mstd-chip-button${value ? " is-active" : ""}`}
+					disabled={disabled}
+					aria-haspopup="menu"
+					aria-expanded={open}
+					onClick={() => (open ? close() : setOpen(true))}
+					title={value ? `Due ${formatDueDate(value)}` : "Set a due date"}
+				>
+					<Icon name="calendar" />
+					<span>{value ? formatDueDate(value) : placeholder}</span>
+				</button>
+			)}
 
-			{value && !disabled && (
+			{value && !disabled && variant === "chip" && (
 				<button
 					type="button"
 					className="mstd-chip-clear"
@@ -168,6 +190,12 @@ function MenuItem(props: {
 			{props.hint && <span className="mstd-menu-hint">{props.hint}</span>}
 		</button>
 	);
+}
+
+/** "today" / "tomorrow" read naturally after "Due"; real dates keep their case. */
+function dueLabel(date: Date): string {
+	const label = formatDueDate(date);
+	return /^(Today|Tomorrow|Yesterday)$/.test(label) ? label.toLowerCase() : label;
 }
 
 function weekdayOf(date: Date): string {

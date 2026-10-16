@@ -1,215 +1,80 @@
 # Microsoft To Do for Obsidian
 
-An Obsidian plugin that displays your Microsoft To Do lists in a sidebar panel. You can create, edit, complete and delete tasks, and send notes or selected text to a list, without leaving your vault.
+**Your Microsoft To Do tasks, right inside Obsidian.**
 
-The plugin reads and writes your tasks directly through Microsoft Graph, which is the same service the official Microsoft To Do applications use. Changes made in Obsidian appear in Microsoft To Do and Outlook, and changes made there appear in Obsidian on the next refresh. The plugin does not store tasks in your vault or create any notes of its own.
+See your lists, add and tick off tasks, and link tasks to your notes, without switching apps. Everything stays in sync with Microsoft To Do on your phone, on the web and in Outlook.
 
-## Requirements
+## What it does
 
-- Obsidian 1.7.2 or later, on desktop or mobile.
-- A Microsoft account with Microsoft To Do. Personal, work and school accounts are all supported.
+- **Shows your To Do lists in Obsidian**: in the main window, in the right side panel next to your other tools, or both at once.
+- **Lets you manage tasks**: add, complete, edit, move and delete them, with due dates, importance, subtasks, tags and notes.
+- **Connects tasks to notes**: turn a note or some selected text into a task, attach notes to a task, and add task links to the note you're writing.
+- **Stays in sync**: changes you make here show up in Microsoft To Do, and changes made there show up here.
 
 ## Features
 
-- Browse every list in your Microsoft To Do account, with task counts.
-- My Day and Important views spanning all lists.
-- Create tasks with a due date, an importance flag and notes.
-- Complete, reopen, rename and delete tasks.
-- Open tasks directly in Microsoft To Do on the web.
-- Create a task from the current note or from selected text, with an optional link back to the note.
-- Optionally replace selected text with a link to the created Microsoft To Do task.
-- Manual refresh, refresh on open, and optional background refresh at a set interval.
-- Interface styled with your Obsidian theme's colours.
+- 📋 **All your lists**, plus smart views: My Tasks, Today, Important, Planned, Assigned to me and Flagged email
+- ✅ **Quick task entry** with due dates and an importance star
+- 🧩 **Subtasks, tags and notes** on every task
+- 🔗 **Linked notes**: attach Obsidian notes to tasks and open them in one click
+- 🔍 **Search** across every list, with filters for Today, Upcoming, Overdue and Completed
+- 🎨 **Colours and icons** for your lists
+- 🪟 **Main window or side panel**: the layout adapts to the space you give it
+- 🌗 **Matches your theme**, light or dark, in your accent colour
+- 📱 **Desktop and mobile**
 
-## Installation
+## Getting started
 
-### From the community plugin directory
+1. Install **Microsoft To Do** from **Settings → Community plugins → Browse** in Obsidian, then turn it on.
+2. Select the ✓ icon in the left ribbon and choose **Connect Microsoft account**.
+3. Sign in with the short code Obsidian shows you. Your lists appear a moment later.
 
-1. Open **Settings > Community plugins > Browse**.
-2. Search for **Microsoft To Do**.
-3. Select **Install**, then **Enable**.
+There's nothing to set up first. Personal, work and school Microsoft accounts all work.
 
-### Manual installation
+## How you'll use it
 
-1. Download `main.js`, `manifest.json` and `styles.css` from the [latest release](https://github.com/jimmieldavisjr/microsoft-todo-obsidian/releases/latest).
-2. Create the folder `<vault>/.obsidian/plugins/microsoft-todo/` if it does not exist.
-3. Copy the three files into that folder.
-4. Reload Obsidian and enable the plugin in **Settings > Community plugins**.
+**Keep it where it suits you.** Open Microsoft To Do in the main window when you're planning, or in the side panel to keep your tasks beside your notes while you write. You can have both open, and they always show the same tasks.
 
-After installation, a check circle icon is added to the left ribbon. Select it to open the panel.
+**Manage tasks at a glance.** Add a task in seconds, tick it off with one click, and star the ones that matter. Select any task to set a due date, break it into subtasks, add tags and notes, or move it to another list.
 
-## Signing in
+**Turn notes into tasks.** Make the note you're reading, or any text you highlight, into a task that links back to where it came from. Link a task into the note you're writing so you never lose track of it.
 
-1. Select the ribbon icon, then select **Connect Microsoft account**.
-2. Obsidian displays a short device code and opens the Microsoft sign-in page in your browser.
-3. Enter the code, sign in to your Microsoft account, then close the browser tab.
-4. Obsidian detects that sign-in is complete and loads your lists.
+**Find anything fast.** Search every list at once, or filter to what's due today, coming up or overdue.
 
-No additional configuration is required before signing in. The plugin includes its own Azure application registration.
+All actions are also in Obsidian's Command Palette under **Microsoft To Do**, and you can give any of them a keyboard shortcut.
 
-If your organisation restricts unapproved third-party applications, an administrator may need to approve the application, or you can supply your own registration. See [Using your own Azure app registration](#using-your-own-azure-app-registration).
+## Good to know
 
-## The panel
+- **"Today" isn't quite Microsoft's "My Day".** Microsoft doesn't share My Day with other apps, so Today shows everything due today or overdue instead.
+- **Assigned to me** shows your Planner tasks (work and school accounts only), and is view-only.
+- **List colours and icons** are saved in Obsidian only. They don't appear in the Microsoft apps.
+- **Moving a task to another list** creates a fresh copy, so older links to that task stop working.
+- **Checkboxes in your notes** are not synced with To Do.
 
-The panel opens in the right sidebar. It can be moved to the left sidebar or to a tab.
+## Privacy
 
-**Header.** The name of the current list, a refresh button and a button that opens the plugin settings.
+The plugin talks directly to Microsoft. There's no middleman server, no extra account to create, and no tracking or analytics. It only asks for access to your tasks, and you can revoke that any time from your Microsoft account at [My Apps](https://myapplications.microsoft.com/).
 
-**Task entry.** A text field for new tasks. When the field is in use, a toolbar appears below it with a due date control, an importance toggle and, in the My Day and Important views, a list selector.
+Your sign-in is saved inside your vault's plugin folder. Keep that in mind if you share your vault. Signing out removes it.
 
-**Task list.** Open tasks, followed by a collapsed **Completed** group when completed tasks are present.
+## Trouble signing in?
 
-**List navigation.** My Day and Important, followed by every list in your account with its task count. The section can be collapsed. Below it, the plugin shows the time of the last sync and a link to Microsoft To Do on the web.
+Some workplaces and schools only allow approved apps. If sign-in is blocked, ask your IT team to approve the app. If you manage your own Microsoft setup, you can also connect through your own Azure app registration in the plugin's settings.
 
-## Task actions
+For anything else, [open an issue on GitHub](https://github.com/jimmieldavisjr/microsoft-todo-obsidian/issues) and describe what happened.
 
-| Action                    | Method                                                                                        |
-| ------------------------- | --------------------------------------------------------------------------------------------- |
-| Open the panel            | Select the ribbon icon                                                                        |
-| Change list               | Select a list in the list navigation                                                          |
-| Add a task                | Type in the field at the top of the panel and press `Enter`                                   |
-| Complete or reopen a task | Select the circle to the left of the title                                                    |
-| Mark a task important     | Select the star                                                                               |
-| Rename a task             | Double-click the title, or select the pencil                                                  |
-| View task details         | Select the task title                                                                         |
-| Open in Microsoft To Do  | Open a task's details, then select **Open in Microsoft To Do**                               |
-| Open the source note      | Open a task's details, then select **Open source note** (shown only for tasks created from a note, with the link back to that note still intact) |
-| Set a due date            | Open the task, select **Due date**, then choose Today, Tomorrow, Next week or a specific date |
-| Clear a due date          | Select **Remove due date** in the date menu, or select the cross on the date control          |
-| Edit task notes           | Open the task, edit the notes field, then click outside it to save                            |
-| Delete a task             | Open the task, select the delete icon, then confirm                                           |
-| Refresh                   | Select the refresh button in the panel header                                                 |
+## What's new
 
-`Escape` cancels the current menu, rename or draft task.
+See [version updates](version-updates/) for what changed in each version. The latest is [1.0.4](version-updates/v1.0.4.md).
 
-Task changes are applied to the panel immediately and sent to Microsoft in the background. If a request fails, the panel displays the reason with an option to retry, and the task reverts to its previous state.
+## Support
 
-## Commands
+Found a bug or have an idea? Open a [GitHub issue](https://github.com/jimmieldavisjr/microsoft-todo-obsidian/issues).
 
-Each command can be assigned a keyboard shortcut in **Settings > Hotkeys**. In the Command Palette the commands are prefixed with **Microsoft To Do**.
-
-| Command                   | Description                                          |
-| ------------------------- | ---------------------------------------------------- |
-| Open                      | Opens and focuses the panel                          |
-| Open My Day               | Opens the panel with the My Day view selected        |
-| Add task                  | Opens a dialog for a title, list, due date and notes |
-| Add selected text as task | Creates a task from the current editor selection     |
-| Add current note as task  | Creates a task from the active note                  |
-| Refresh                   | Retrieves the current tasks from Microsoft           |
-| Sign in to Microsoft      | Starts sign-in. Available when signed out            |
-| Sign out                  | Removes the stored sign-in. Available when signed in |
-
-## Creating tasks from notes
-
-**Add current note as task** uses the note name as the task title.
-
-**Add selected text as task** uses the first non-empty line of the selection as the task title, and any remaining lines as the task notes. Markdown syntax is removed from the title, including list bullets, numbered list markers, headings, block quotes and task checkboxes.
-
-Both commands can add a reference to the source note in the task notes. Two formats are available:
-
-- An `obsidian://` link, which can be selected from the Microsoft To Do applications to open the note. This is the default.
-- The vault path of the note as plain text.
-
-The reference can be disabled in the settings. Each command can also be assigned its own target list, or left to use the default list.
-
-The **Format selected text as a task link** setting is disabled by default. When enabled, **Add selected text as task** replaces the unchanged selection with a Markdown link to the newly created Microsoft To Do task. If the selection changes while the task is being created, the plugin leaves the note untouched.
-
-## Settings
-
-Open **Settings > Community plugins > Microsoft To Do**, or select the settings button in the panel header.
-
-### Microsoft account
-
-| Setting                 | Description                                                                                                                                                                                                     |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Application (client) ID | Optional. The plugin includes a registration, so this is not normally required. See [Using your own Azure app registration](#using-your-own-azure-app-registration).                                            |
-| Directory (tenant)      | Optional. `common` accepts both personal and work or school accounts and is the default. Use `consumers` for personal accounts only, `organizations` for work or school accounts only, or a specific tenant ID. |
-| Connection              | Connects or disconnects the account. Disconnecting removes the stored sign-in from this vault.                                                                                                                  |
-
-Changing either the client ID or the tenant clears the stored sign-in, because the existing tokens belong to the previous configuration.
-
-### Behaviour
-
-| Setting                              | Description                                                                                                                                                                 |
-| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Default view                         | The list shown when the panel opens: last used, My Day, Important, or the default list.                                                                                     |
-| Default list                         | The list used for new tasks when no other list applies, including tasks created from the Command Palette.                                                                   |
-| Open Microsoft To Do on startup      | Opens the panel in the sidebar when Obsidian loads.                                                                                                                         |
-| Refresh when the panel opens         | Retrieves current tasks each time the panel is opened or revealed. Enabled by default.                                                                                      |
-| Auto-refresh                         | Background refresh interval: off, 5, 15, 30 or 60 minutes. Refresh runs only while the panel is open.                                                                       |
-| Load completed tasks                 | Retrieves completed tasks from Microsoft on refresh. Disabled by default. Tasks completed within Obsidian remain visible until the next refresh regardless of this setting. |
-| Show task counts in the list sidebar | Loads every list on refresh so that counts, My Day and Important remain accurate. Disable it to reduce the number of requests if you have many lists.                       |
-
-### Obsidian integration
-
-| Setting                     | Description                                                                          |
-| --------------------------- | ------------------------------------------------------------------------------------ |
-| Add a link back to the note | Adds a reference to the source note when a task is created from a note or selection. |
-| Link style                  | Selects an `obsidian://` link or a plain vault path.                                 |
-| List for selected text      | The target list for **Add selected text as task**.                                   |
-| Format selected text as a task link | Replaces selected text with a link to the created task. Disabled by default.       |
-| List for the current note   | The target list for **Add current note as task**.                                    |
-
-## Privacy and data storage
-
-Requests are made directly between Obsidian and Microsoft. There is no intermediate server, no account to create with the plugin, and no telemetry, analytics or logging of any kind.
-
-Sign-in is handled by Microsoft. During sign-in you are shown a consent screen listing the access the plugin requests, which is your Microsoft To Do tasks and nothing else. Access can be revoked at any time at [My Apps](https://myapplications.microsoft.com/).
-
-The sign-in token is stored in your vault at `.obsidian/plugins/microsoft-todo/data.json`. It is not encrypted, because Obsidian does not provide plugins with encrypted storage. If your vault is synchronised to another location, this file is included. Signing out deletes it.
-
-## Limitations
-
-**My Day is an approximation.** Microsoft Graph does not expose the My Day list to third-party applications. The plugin derives an equivalent view containing every task that is due today or overdue, across all lists. The contents usually match the Microsoft To Do applications but are not guaranteed to be identical. The Important view is derived in the same way, from tasks marked with high importance.
-
-**Markdown checkboxes are not synchronised.** Checkboxes written in your notes, such as `- [ ] example`, remain plain text. Linking them to Microsoft To Do tasks requires handling edit conflicts, deletions and offline changes, and is planned as a separate release rather than included here.
-
-**Task counts depend on a setting.** With **Show task counts in the list sidebar** disabled, only the selected list is loaded, so counts for other lists and for the My Day and Important views are not shown.
-
-## Troubleshooting
-
-**"Microsoft is treating this app registration as a confidential client."** Your registration does not permit public client flows. In the Azure portal, open the registration, go to **Authentication > Advanced settings**, set **Allow public client flows** to **Yes**, save, then connect again.
-
-**"This app registration only accepts accounts from a single Microsoft directory."** The registration is single-tenant. Either set **Directory (tenant)** in the plugin settings to your organisation's tenant ID, or change the registration's supported account types to include any directory and personal Microsoft accounts.
-
-**"That Microsoft account is not allowed to use this app registration."** The account belongs to a different directory from the one the registration permits. Sign in with an account from that organisation, or use your own registration.
-
-**Sign-in is blocked by your organisation.** Some organisations do not permit unapproved third-party applications. Request approval from your administrator, or register your own application in your tenant.
-
-**No lists appear after signing in.** Select the refresh button in the panel header. If the previously selected list has been deleted in Microsoft To Do, the panel reports this and another list can be selected.
-
-Sign-in failures also write the message returned by Microsoft to the developer console, which can be opened with `Ctrl+Shift+I` or `Cmd+Option+I`. Include that message when reporting an issue.
-
-## Using your own Azure app registration
-
-This is required only if your organisation blocks unapproved applications, or if you prefer to use a registration that you control.
-
-1. Open [Azure Portal > App registrations](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade) and select **New registration**.
-2. Enter any name. Leave **Redirect URI** empty. Select **Register**.
-3. Copy the **Application (client) ID**.
-4. Open **Authentication**, set **Allow public client flows** to **Yes**, and save.
-5. Open **API permissions**, select **Add a permission > Microsoft Graph > Delegated permissions**, and add **`Tasks.ReadWrite`**.
-
-Enter the ID in **Settings > Microsoft To Do > Application (client) ID**, then connect. Clearing the field restores the included registration.
-
-Steps 4 and 5 are required. Sign-in fails without them.
-
-## Technical details
-
-The plugin is written in TypeScript and React and calls the Microsoft Graph v1.0 To Do endpoints. The requested scope is `Tasks.ReadWrite`, together with `openid`, `profile` and `offline_access`.
-
-Authentication uses the OAuth 2.0 device code flow. This flow requires no redirect URI and no client secret, so it behaves identically on desktop and mobile and does not require a client secret to be distributed with the plugin.
-
-## Contributing and support
-
-The source is available in this repository. Bug reports and feature requests can be submitted through [GitHub issues](https://github.com/jimmieldavisjr/microsoft-todo-obsidian/issues).
-
-The plugin is free and is developed outside working hours. If you wish to support its development, sponsorship is available at [GitHub Sponsors](https://github.com/sponsors/jimmieldavisjr). The heart icon beside the plugin in Obsidian's plugin list links to the same page.
+The plugin is free and built in spare time. If it helps you, you can support it through [GitHub Sponsors](https://github.com/sponsors/jimmieldavisjr).
 
 ## Licence
 
 MIT. See [LICENSE](LICENSE).
 
-## Trademarks
-
-This project is not affiliated with or endorsed by Microsoft. Microsoft To Do and Microsoft Graph are trademarks of Microsoft Corporation.
+*Not affiliated with or endorsed by Microsoft. Microsoft To Do and Microsoft Graph are trademarks of Microsoft Corporation.*

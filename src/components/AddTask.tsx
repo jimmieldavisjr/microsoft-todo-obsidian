@@ -17,6 +17,10 @@ export interface AddTaskProps {
 	defaultDueDate: Date | null;
 	defaultImportance: Importance;
 	onCreate: (input: CreateTaskInput, listId: string) => Promise<void>;
+	/** Focus the title field on mount, e.g. when opened from a New Task button. */
+	autoFocus?: boolean;
+	/** Called on Escape, after the draft is cleared. */
+	onCancel?: () => void;
 }
 
 /**
@@ -33,6 +37,10 @@ export function AddTask(props: AddTaskProps): ReactElement {
 	const [active, setActive] = useState(false);
 	const [submitting, setSubmitting] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		if (props.autoFocus) inputRef.current?.focus();
+	}, [props.autoFocus]);
 
 	// Switching views changes what a "plain" new task should look like.
 	useEffect(() => {
@@ -102,8 +110,10 @@ export function AddTask(props: AddTaskProps): ReactElement {
 							void submit();
 						} else if (event.key === "Escape") {
 							event.preventDefault();
+							event.stopPropagation();
 							reset();
 							inputRef.current?.blur();
+							props.onCancel?.();
 						}
 					}}
 				/>

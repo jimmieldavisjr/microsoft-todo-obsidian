@@ -4,3 +4,4 @@ main.js.map
 data.json
 *.log
 .DS_Store
+preview/dist

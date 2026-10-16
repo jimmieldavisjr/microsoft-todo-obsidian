@@ -22,6 +22,6 @@
     "lib": ["DOM", "DOM.Iterable", "ES2020"],
     "types": ["node"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "preview/src/**/*.ts", "preview/src/**/*.tsx"],
   "exclude": ["node_modules", "main.js"]
 }

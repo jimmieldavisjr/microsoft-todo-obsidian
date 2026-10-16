@@ -8,7 +8,9 @@
     "dev": "node esbuild.config.mjs",
     "build": "tsc --noEmit --skipLibCheck && node esbuild.config.mjs production",
     "typecheck": "tsc --noEmit --skipLibCheck",
-    "install-to-vault": "node scripts/install-to-vault.mjs"
+    "install-to-vault": "node scripts/install-to-vault.mjs",
+    "preview": "node scripts/preview.mjs",
+    "preview:build": "node scripts/preview.mjs --build"
   },
   "keywords": [
     "obsidian",
@@ -32,6 +34,7 @@
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "esbuild": "^0.24.2",
+    "lucide": "^1.57.0",
     "obsidian": "^1.7.2",
     "typescript": "^5.7.2"
   },

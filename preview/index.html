@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Microsoft To Do for Obsidian · Preview</title>
+		<link rel="stylesheet" href="preview.css" />
+		<!-- The plugin's styles.css, bundled by scripts/preview.mjs. -->
+		<link rel="stylesheet" href="dist/main.css" />
+	</head>
+	<body class="theme-dark">
+		<div id="root"></div>
+		<script src="dist/main.js"></script>
+		<script>
+			// Live reload while `npm run preview` is watching; harmless when opened as a file.
+			if (location.protocol.startsWith("http")) {
+				new EventSource("/esbuild").addEventListener("change", () => location.reload());
+			}
+		</script>
+	</body>
+</html>
