@@ -57,6 +57,13 @@ The plugin talks directly to Microsoft. There's no middleman server, no extra ac
 
 Your sign-in is saved inside your vault's plugin folder. Keep that in mind if you share your vault. Signing out removes it.
 
+The plugin only reads your notes for actions you choose:
+
+- **Adding a note or selected text as a task** sends that note's title or the selected text to Microsoft To Do, with a link back to the note.
+- **Linking a note to a task** lists the notes in your vault so you can pick one. A linked note's `description` or `summary` property then shows in the task's details.
+- **Adding a task link to a note** inserts the link at your cursor. Nothing else in the note changes.
+- **Copy buttons** (for the sign-in code and a task's link) write to your clipboard. The plugin never reads from it.
+
 ## Trouble signing in?
 
 Some workplaces and schools only allow approved apps. If sign-in is blocked, ask your IT team to approve the app. If you manage your own Microsoft setup, you can also connect through your own Azure app registration in the plugin's settings.
@@ -65,7 +72,7 @@ For anything else, [open an issue on GitHub](https://github.com/jimmieldavisjr/m
 
 ## What's new
 
-See [version updates](version-updates/) for what changed in each version. The latest is [1.0.4](version-updates/v1.0.4.md).
+See [version updates](version-updates/) for what changed in each version. The latest is [1.0.6](version-updates/v1.0.6.md).
 
 ## Support
 

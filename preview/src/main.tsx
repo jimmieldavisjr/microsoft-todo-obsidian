@@ -38,15 +38,17 @@ const ACCENTS: Array<{ name: string; h: number; s: number; l: number }> = [
 	{ name: "Pink", h: 330, s: 75, l: 62 },
 ];
 
+// Kept per tab, so a dark tab and a light tab can sit side by side and each
+// survives live reloads with its own theme and side-panel width.
 function usePersistentState<T>(key: string, initial: T): [T, (value: T) => void] {
 	const [value, setValue] = useState<T>(() => {
-		const saved = localStorage.getItem(`mstd-preview:${key}`);
+		const saved = sessionStorage.getItem(`mstd-preview:${key}`);
 		return saved ? (JSON.parse(saved) as T) : initial;
 	});
 	return [
 		value,
 		(next: T) => {
-			localStorage.setItem(`mstd-preview:${key}`, JSON.stringify(next));
+			sessionStorage.setItem(`mstd-preview:${key}`, JSON.stringify(next));
 			setValue(next);
 		},
 	];
