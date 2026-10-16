@@ -1,6 +1,6 @@
 {
   "name": "microsoft-todo-obsidian",
-  "version": "1.0.1",
+  "version": "1.0.5",
   "description": "Microsoft To Do for Obsidian - browse lists, create, edit and complete tasks without leaving your vault.",
   "main": "main.js",
   "private": true,
