@@ -22,15 +22,14 @@ export function createTodoTaskMarkdownLink(label: string, taskId: string): strin
 
 /** Shows a success message with a link to the task just returned by Graph. */
 export function showTaskCreatedNotice(message: string, taskId: string): void {
-	const fragment = document.createDocumentFragment();
-	fragment.append(message, " ");
-
-	const link = document.createElement("a");
-	link.textContent = "Open task";
-	link.href = getTodoTaskUrl(taskId);
-	link.target = "_blank";
-	link.rel = "noopener";
-	fragment.append(link);
+	const fragment = createFragment((frag) => {
+		frag.appendText(`${message} `);
+		frag.createEl("a", {
+			text: "Open task",
+			href: getTodoTaskUrl(taskId),
+			attr: { target: "_blank", rel: "noopener" },
+		});
+	});
 
 	new Notice(fragment);
 }

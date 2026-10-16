@@ -595,7 +595,7 @@ function LinkedItemRow({ task, item }: { task: TaskWithList; item: LinkedItem })
 /** A note's own description, if its frontmatter has one. */
 function noteSummary(app: ReturnType<typeof useTodoContext>["app"], path: string): string | null {
 	const frontmatter = app.metadataCache.getCache(path)?.frontmatter;
-	const value = frontmatter?.description ?? frontmatter?.summary;
+	const value: unknown = frontmatter?.description ?? frontmatter?.summary;
 	return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
@@ -861,9 +861,9 @@ function useAutoHeight(ref: RefObject<HTMLTextAreaElement>, value: string): void
 		if (!element) return;
 
 		const fit = (): void => {
-			element.style.height = "auto";
+			element.setCssStyles({ height: "auto" });
 			// scrollHeight excludes borders; add them back so nothing clips.
-			element.style.height = `${element.scrollHeight + element.offsetHeight - element.clientHeight}px`;
+			element.setCssStyles({ height: `${element.scrollHeight + element.offsetHeight - element.clientHeight}px` });
 		};
 		fit();
 

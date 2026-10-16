@@ -21,6 +21,7 @@ interface ElOptions {
 	type?: string;
 	placeholder?: string;
 	value?: string;
+	href?: string;
 }
 
 function applyOptions(el: HTMLElement, options?: ElOptions | string): void {
@@ -34,27 +35,53 @@ function applyOptions(el: HTMLElement, options?: ElOptions | string): void {
 	if (options.type) el.setAttribute("type", options.type);
 	if (options.placeholder) el.setAttribute("placeholder", options.placeholder);
 	if (options.value !== undefined) (el as HTMLInputElement).value = options.value;
+	if (options.href) el.setAttribute("href", options.href);
 	for (const [key, value] of Object.entries(options.attr ?? {})) {
 		if (value === null || value === false) continue;
 		el.setAttribute(key, String(value));
 	}
 }
 
-// Typed loosely on purpose: Obsidian's declarations already describe these.
-const proto = HTMLElement.prototype as unknown as Record<string, unknown>;
+type ElCallback = (el: HTMLElement) => void;
 
-proto.createEl = function (this: HTMLElement, tag: string, options?: ElOptions | string, callback?: (el: HTMLElement) => void) {
-	const el = document.createElement(tag);
-	applyOptions(el, options);
-	this.appendChild(el);
-	callback?.(el);
-	return el;
+/** The shim's own createEl: the one place the preview makes elements directly. */
+function make(tag: string, options?: ElOptions | string, callback?: ElCallback, parent?: Node): HTMLElement {
+	const node = document.createElement(tag);
+	applyOptions(node, options);
+	parent?.appendChild(node);
+	callback?.(node);
+	return node;
+}
+
+// Typed loosely on purpose: Obsidian's declarations already describe these.
+const host = window as unknown as Record<string, unknown>;
+host.createEl = (tag: string, options?: ElOptions | string, callback?: ElCallback) => make(tag, options, callback);
+host.createDiv = (options?: ElOptions | string, callback?: ElCallback) => make("div", options, callback);
+host.createSpan = (options?: ElOptions | string, callback?: ElCallback) => make("span", options, callback);
+host.createFragment = (callback?: (frag: DocumentFragment) => void) => {
+	const frag = new DocumentFragment();
+	callback?.(frag);
+	return frag;
 };
-proto.createDiv = function (this: HTMLElement, options?: ElOptions | string) {
-	return (this as unknown as { createEl: (tag: string, o?: ElOptions | string) => HTMLElement }).createEl("div", options);
+
+// Obsidian adds these to Node, so fragments have them as well as elements.
+const nodeProto = Node.prototype as unknown as Record<string, unknown>;
+nodeProto.createEl = function (this: Node, tag: string, options?: ElOptions | string, callback?: ElCallback) {
+	return make(tag, options, callback, this);
 };
-proto.createSpan = function (this: HTMLElement, options?: ElOptions | string) {
-	return (this as unknown as { createEl: (tag: string, o?: ElOptions | string) => HTMLElement }).createEl("span", options);
+nodeProto.createDiv = function (this: Node, options?: ElOptions | string, callback?: ElCallback) {
+	return make("div", options, callback, this);
+};
+nodeProto.createSpan = function (this: Node, options?: ElOptions | string, callback?: ElCallback) {
+	return make("span", options, callback, this);
+};
+nodeProto.appendText = function (this: ParentNode, text: string) {
+	this.append(text);
+};
+
+const proto = HTMLElement.prototype as unknown as Record<string, unknown>;
+proto.setCssStyles = function (this: HTMLElement, styles: Partial<CSSStyleDeclaration>) {
+	Object.assign(this.style, styles);
 };
 proto.empty = function (this: HTMLElement) {
 	this.replaceChildren();
@@ -77,10 +104,7 @@ proto.setAttr = function (this: HTMLElement, name: string, value: string | numbe
 };
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, parent?: HTMLElement): HTMLElementTagNameMap[K] {
-	const node = document.createElement(tag);
-	if (cls) node.className = cls;
-	parent?.appendChild(node);
-	return node;
+	return make(tag, cls, undefined, parent) as HTMLElementTagNameMap[K];
 }
 
 /* -------------------------------------------------------------------------- */
@@ -105,28 +129,10 @@ export function setIcon(parent: HTMLElement, iconId: string): void {
 		console.warn(`[preview] Unknown icon "${iconId}"`);
 		return;
 	}
-	const svg = lucide.createElement(node as Parameters<typeof lucide.createElement>[0]);
+	const svg = lucide.createElement(node);
 	svg.setAttribute("class", `svg-icon lucide-${iconId}`);
 	parent.appendChild(svg);
 }
-
-/* -------------------------------------------------------------------------- */
-/* Platform                                                                   */
-/* -------------------------------------------------------------------------- */
-
-const mac = /Mac|iPhone|iPad/.test(navigator.platform);
-
-export const Platform = {
-	isDesktop: true,
-	isMobile: false,
-	isDesktopApp: true,
-	isMobileApp: false,
-	isMacOS: mac,
-	isWin: !mac,
-	isLinux: false,
-	isPhone: false,
-	isTablet: false,
-};
 
 /* -------------------------------------------------------------------------- */
 /* Notice                                                                     */
@@ -516,7 +522,7 @@ export class Setting {
 
 /** The settings module extends this at import time; the preview never opens it. */
 export class PluginSettingTab {
-	readonly containerEl = document.createElement("div");
+	readonly containerEl = createDiv();
 	constructor(
 		public app: App,
 		public plugin: unknown

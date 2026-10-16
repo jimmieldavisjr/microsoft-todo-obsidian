@@ -1270,7 +1270,6 @@
 .mstd-view .mstd-row.is-completed .mstd-row-title {
 	color: var(--text-muted);
 	text-decoration: line-through;
-	text-decoration-color: var(--text-faint);
 }
 
 .mstd-view .mstd-row-meta {
@@ -1341,7 +1340,6 @@
 	padding: 1px var(--size-2-3);
 	border-radius: var(--radius-s);
 	background-color: rgba(var(--mstd-tag-rgb), 0.16);
-	color: var(--mstd-tint, var(--text-muted));
 	/* Pure palette colours (yellow especially) wash out on light themes. */
 	color: color-mix(in srgb, var(--mstd-tint, var(--text-muted)) 70%, var(--text-normal));
 	font-size: var(--font-ui-smaller);

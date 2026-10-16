@@ -33,8 +33,8 @@ import { DEMO_VAULT, NOTES } from "./demo-vault";
 export type AuthMode = "signed-in" | "signed-out" | "unconfigured";
 
 export interface WorkspaceState {
-	/** What the main window's active tab shows: Microsoft To Do, or a note path. */
-	mainTab: "todo" | string;
+	/** What the main window's active tab shows: `"todo"` for Microsoft To Do, or a note path. */
+	mainTab: string;
 	mainTodoOpen: boolean;
 	sidebarOpen: boolean;
 	/** Briefly set when a view is revealed, so the chrome can highlight it. */

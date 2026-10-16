@@ -162,7 +162,10 @@ body.is-resizing {
 }
 
 #root {
-	display: contents;
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
 }
 
 .svg-icon {
@@ -815,12 +818,9 @@ body.is-resizing .workspace-leaf-resize-handle {
 }
 
 /* Quick-switcher style picker (FuzzySuggestModal). */
-.modal-container:has(.prompt) {
-	align-items: flex-start;
-	padding-top: 14vh;
-}
-
 .prompt {
+	align-self: flex-start;
+	margin-top: 14vh;
 	position: relative;
 	width: min(600px, 92vw);
 	overflow: hidden;
